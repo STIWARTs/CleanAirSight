@@ -109,7 +109,7 @@ const About = () => {
               <h3 className="text-xl font-semibold text-white mb-2">Harmonization & Validation</h3>
               <p className="text-slate-400">
                 Data from different sources is normalized to standard units (µg/m³), merged with weather context,
-                and cross-validated. Discrepancies >30% trigger low-confidence flags.
+                and cross-validated. Discrepancies greater than 30% trigger low-confidence flags.
               </p>
             </div>
           </div>
@@ -135,7 +135,7 @@ const About = () => {
               <h3 className="text-xl font-semibold text-white mb-2">Visualization & Alerts</h3>
               <p className="text-slate-400">
                 Interactive maps, real-time dashboards, and forecasting charts make data accessible.
-                AQI >150 triggers health warnings with actionable recommendations.
+                AQI over 150 triggers health warnings with actionable recommendations.
               </p>
             </div>
           </div>
