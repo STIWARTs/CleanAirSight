@@ -126,8 +126,31 @@ const Forecast = () => {
 
   return (
     <div className="space-y-6">
-      {/* Enhanced Header */}
-      <div className="bg-gradient-to-r from-blue-900 via-blue-800 to-indigo-900 rounded-xl p-6 text-white">
+      {/* Enhanced Header with Risk Indicator */}
+      <div className={`rounded-xl p-6 text-white relative overflow-hidden ${
+        maxAQI <= 50 ? 'bg-gradient-to-r from-green-600 via-green-700 to-emerald-800' :
+        maxAQI <= 100 ? 'bg-gradient-to-r from-yellow-600 via-yellow-700 to-orange-600' :
+        maxAQI <= 150 ? 'bg-gradient-to-r from-orange-600 via-orange-700 to-red-600' :
+        maxAQI <= 200 ? 'bg-gradient-to-r from-red-600 via-red-700 to-red-800' :
+        'bg-gradient-to-r from-purple-700 via-purple-800 to-red-900'
+      }`}>
+        {/* Risk Level Indicator */}
+        <div className="absolute top-4 right-4">
+          <div className={`px-4 py-2 rounded-full text-sm font-bold ${
+            maxAQI <= 50 ? 'bg-green-500 text-white' :
+            maxAQI <= 100 ? 'bg-yellow-500 text-black' :
+            maxAQI <= 150 ? 'bg-orange-500 text-white' :
+            maxAQI <= 200 ? 'bg-red-500 text-white' :
+            'bg-purple-600 text-white'
+          }`}>
+            {maxAQI <= 50 ? '🟢 LOW RISK' :
+             maxAQI <= 100 ? '🟡 MODERATE RISK' :
+             maxAQI <= 150 ? '🟠 HIGH RISK' :
+             maxAQI <= 200 ? '🔴 VERY HIGH RISK' :
+             '🟣 EXTREME RISK'}
+          </div>
+        </div>
+        
         <div className="flex items-center justify-between">
           <div>
             <h2 className="text-3xl font-bold mb-2">🔮 Air Quality Forecast</h2>
@@ -147,9 +170,12 @@ const Forecast = () => {
               </div>
             </div>
           </div>
-          <div className="text-right">
+          <div className="text-right mr-32">
             <div className="text-2xl font-bold">{selectedCity}</div>
             <div className="text-blue-300 text-sm">Next {selectedHours}h Forecast</div>
+            <div className="text-lg font-semibold mt-1">
+              Peak AQI: <span className="text-yellow-300">{maxAQI}</span>
+            </div>
           </div>
         </div>
       </div>
@@ -165,10 +191,10 @@ const Forecast = () => {
             <select
               value={selectedCity}
               onChange={(e) => setSelectedCity(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-gray-900"
             >
               {cities.map(city => (
-                <option key={city} value={city}>{city}</option>
+                <option key={city} value={city} className="text-gray-900 bg-white">{city}</option>
               ))}
             </select>
           </div>
@@ -181,13 +207,13 @@ const Forecast = () => {
             <select
               value={selectedHours}
               onChange={(e) => setSelectedHours(Number(e.target.value))}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-gray-900"
             >
-              <option value={6}>6 hours</option>
-              <option value={12}>12 hours</option>
-              <option value={24}>24 hours</option>
-              <option value={48}>48 hours</option>
-              <option value={72}>72 hours</option>
+              <option value={6} className="text-gray-900 bg-white">6 hours</option>
+              <option value={12} className="text-gray-900 bg-white">12 hours</option>
+              <option value={24} className="text-gray-900 bg-white">24 hours</option>
+              <option value={48} className="text-gray-900 bg-white">48 hours</option>
+              <option value={72} className="text-gray-900 bg-white">72 hours</option>
             </select>
           </div>
 
@@ -199,11 +225,11 @@ const Forecast = () => {
             <select
               value={chartType}
               onChange={(e) => setChartType(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-gray-900"
             >
-              <option value="line">Line Chart</option>
-              <option value="area">Area Chart</option>
-              <option value="bar">Bar Chart</option>
+              <option value="line" className="text-gray-900 bg-white">Line Chart</option>
+              <option value="area" className="text-gray-900 bg-white">Area Chart</option>
+              <option value="bar" className="text-gray-900 bg-white">Bar Chart</option>
             </select>
           </div>
 
@@ -216,7 +242,7 @@ const Forecast = () => {
               type="number"
               value={alertThreshold}
               onChange={(e) => setAlertThreshold(Number(e.target.value))}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 bg-white"
               min="0"
               max="300"
             />
@@ -275,72 +301,129 @@ const Forecast = () => {
         </div>
       </div>
 
-      {/* Enhanced Stats Cards */}
+      {/* Risk Alert Banner */}
+      {maxAQI > 100 && (
+        <div className={`rounded-lg p-4 border-l-4 animate-pulse ${
+          maxAQI <= 150 ? 'bg-orange-50 border-orange-500' :
+          maxAQI <= 200 ? 'bg-red-50 border-red-500' :
+          'bg-purple-50 border-purple-500'
+        }`}>
+          <div className="flex items-center">
+            <AlertTriangle className={`w-6 h-6 mr-3 ${
+              maxAQI <= 150 ? 'text-orange-600' :
+              maxAQI <= 200 ? 'text-red-600' :
+              'text-purple-600'
+            }`} />
+            <div>
+              <div className={`font-bold text-lg ${
+                maxAQI <= 150 ? 'text-orange-900' :
+                maxAQI <= 200 ? 'text-red-900' :
+                'text-purple-900'
+              }`}>
+                {maxAQI <= 150 ? '🟠 HIGH RISK ALERT' :
+                 maxAQI <= 200 ? '🔴 VERY HIGH RISK ALERT' :
+                 '🟣 EXTREME RISK ALERT'}
+              </div>
+              <div className={`text-sm ${
+                maxAQI <= 150 ? 'text-orange-800' :
+                maxAQI <= 200 ? 'text-red-800' :
+                'text-purple-800'
+              }`}>
+                Peak AQI of {maxAQI} expected at {peakTime}. {
+                maxAQI <= 150 ? 'Sensitive groups should avoid outdoor activities.' :
+                maxAQI <= 200 ? 'Everyone should limit outdoor exposure.' :
+                'Health emergency - stay indoors with air filtration.'
+                }
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Enhanced Stats Cards with Animations */}
       <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
-        <div className="bg-white rounded-lg shadow-md p-4 border-l-4 border-blue-500">
+        <div className="bg-white rounded-lg shadow-md p-4 border-l-4 border-blue-500 hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1">
           <div className="flex items-center justify-between mb-2">
             <div className="text-sm text-gray-600">Average AQI</div>
             <TrendingUp className="w-4 h-4 text-gray-400" />
           </div>
-          <div className="text-2xl font-bold" style={{ color: getAQIColor(avgAQI) }}>
+          <div className="text-2xl font-bold transition-all duration-500" style={{ color: getAQIColor(avgAQI) }}>
             {avgAQI}
           </div>
           <div className="text-xs text-gray-500 mt-1">{getAQILevel(avgAQI)}</div>
         </div>
         
-        <div className="bg-white rounded-lg shadow-md p-4 border-l-4 border-red-500">
+        <div className="bg-white rounded-lg shadow-md p-4 border-l-4 border-red-500 hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1">
           <div className="flex items-center justify-between mb-2">
             <div className="text-sm text-gray-600">Peak AQI</div>
-            <AlertTriangle className="w-4 h-4 text-red-400" />
+            <AlertTriangle className={`w-4 h-4 text-red-400 ${maxAQI > 100 ? 'animate-pulse' : ''}`} />
           </div>
-          <div className="text-2xl font-bold" style={{ color: getAQIColor(maxAQI) }}>
+          <div className="text-2xl font-bold transition-all duration-500" style={{ color: getAQIColor(maxAQI) }}>
             {maxAQI}
           </div>
           <div className="text-xs text-gray-500 mt-1">at {peakTime}</div>
         </div>
 
-        <div className="bg-white rounded-lg shadow-md p-4 border-l-4 border-green-500">
+        <div className="bg-white rounded-lg shadow-md p-4 border-l-4 border-green-500 hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1">
           <div className="flex items-center justify-between mb-2">
             <div className="text-sm text-gray-600">Best AQI</div>
             <Sun className="w-4 h-4 text-green-400" />
           </div>
-          <div className="text-2xl font-bold" style={{ color: getAQIColor(minAQI) }}>
+          <div className="text-2xl font-bold transition-all duration-500" style={{ color: getAQIColor(minAQI) }}>
             {minAQI}
           </div>
           <div className="text-xs text-gray-500 mt-1">at {bestTime}</div>
         </div>
         
-        <div className="bg-white rounded-lg shadow-md p-4 border-l-4 border-purple-500">
+        <div className="bg-white rounded-lg shadow-md p-4 border-l-4 border-purple-500 hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1">
           <div className="flex items-center justify-between mb-2">
             <div className="text-sm text-gray-600">Confidence</div>
             <Brain className="w-4 h-4 text-purple-400" />
           </div>
-          <div className="text-2xl font-bold text-purple-600">
+          <div className="text-2xl font-bold text-purple-600 transition-all duration-500">
             {avgConfidence}%
           </div>
           <div className="text-xs text-gray-500 mt-1">ML Accuracy</div>
         </div>
 
-        <div className="bg-white rounded-lg shadow-md p-4 border-l-4 border-orange-500">
+        <div className="bg-white rounded-lg shadow-md p-4 border-l-4 border-orange-500 hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1">
           <div className="flex items-center justify-between mb-2">
             <div className="text-sm text-gray-600">Alert Hours</div>
-            <Bell className="w-4 h-4 text-orange-400" />
+            <Bell className={`w-4 h-4 text-orange-400 ${alertHours > 0 ? 'animate-bounce' : ''}`} />
           </div>
-          <div className="text-2xl font-bold text-orange-600">
+          <div className="text-2xl font-bold text-orange-600 transition-all duration-500">
             {alertHours}
           </div>
           <div className="text-xs text-gray-500 mt-1">Above {alertThreshold} AQI</div>
         </div>
 
-        <div className="bg-white rounded-lg shadow-md p-4 border-l-4 border-indigo-500">
+        <div className={`rounded-lg shadow-md p-4 border-l-4 hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1 ${
+          maxAQI <= 50 ? 'bg-green-50 border-green-500' :
+          maxAQI <= 100 ? 'bg-yellow-50 border-yellow-500' :
+          maxAQI <= 150 ? 'bg-orange-50 border-orange-500' :
+          maxAQI <= 200 ? 'bg-red-50 border-red-500' :
+          'bg-purple-50 border-purple-500'
+        }`}>
           <div className="flex items-center justify-between mb-2">
             <div className="text-sm text-gray-600">Health Risk</div>
-            <Eye className="w-4 h-4 text-indigo-400" />
+            <div className="text-2xl animate-pulse">
+              {maxAQI <= 50 ? '🟢' :
+               maxAQI <= 100 ? '🟡' :
+               maxAQI <= 150 ? '🟠' :
+               maxAQI <= 200 ? '🔴' :
+               '🟣'}
+            </div>
           </div>
-          <div className="text-2xl font-bold text-indigo-600">
-            {maxAQI <= 50 ? 'Low' : maxAQI <= 100 ? 'Moderate' : maxAQI <= 150 ? 'High' : 'Very High'}
+          <div className={`text-2xl font-bold transition-all duration-500 ${
+            maxAQI <= 50 ? 'text-green-600' :
+            maxAQI <= 100 ? 'text-yellow-600' :
+            maxAQI <= 150 ? 'text-orange-600' :
+            maxAQI <= 200 ? 'text-red-600' :
+            'text-purple-600'
+          }`}>
+            {maxAQI <= 50 ? 'Low' : maxAQI <= 100 ? 'Moderate' : maxAQI <= 150 ? 'High' : maxAQI <= 200 ? 'Very High' : 'Extreme'}
           </div>
-          <div className="text-xs text-gray-500 mt-1">Overall Risk</div>
+          <div className="text-xs text-gray-500 mt-1">Overall Risk Level</div>
         </div>
       </div>
 
