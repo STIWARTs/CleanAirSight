@@ -21,7 +21,6 @@ const MapView = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [showFilters, setShowFilters] = useState(false);
   const [basemap, setBasemap] = useState('light');
-  const [fullscreen, setFullscreen] = useState(false);
   const [showHeatmap, setShowHeatmap] = useState(false);
   const [autoRefresh, setAutoRefresh] = useState(false);
   const [selectedLocation, setSelectedLocation] = useState(null);
@@ -43,6 +42,7 @@ const MapView = () => {
     setMapData(demoLocations);
     setLoading(false);
   }, []);
+
 
   const getAQIColor = (aqi) => {
     if (aqi <= 50) return '#10b981'; // Green
@@ -124,6 +124,19 @@ const MapView = () => {
     }
   };
 
+  const getBasemapAttribution = () => {
+    switch (basemap) {
+      case 'satellite':
+        return 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community';
+      case 'terrain':
+        return 'Map data: &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, <a href="http://viewfinderpanoramas.org">SRTM</a> | Map style: &copy; <a href="https://opentopomap.org">OpenTopoMap</a>';
+      case 'dark':
+        return '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>';
+      default:
+        return '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>';
+    }
+  };
+
   const filterBySearch = (location) => {
     if (!searchQuery) return true;
     return location.name.toLowerCase().includes(searchQuery.toLowerCase());
@@ -177,13 +190,6 @@ const MapView = () => {
             >
               <RefreshCw className={`w-5 h-5 ${autoRefresh ? 'animate-spin' : ''}`} />
             </button>
-            <button
-              onClick={() => setFullscreen(!fullscreen)}
-              className="p-2 bg-white/20 text-white hover:bg-white/30 rounded-lg transition"
-              title="Toggle fullscreen"
-            >
-              <Maximize2 className="w-5 h-5" />
-            </button>
             <button className="p-2 bg-white/20 text-white hover:bg-white/30 rounded-lg transition" title="Export data">
               <Download className="w-5 h-5" />
             </button>
@@ -227,7 +233,7 @@ const MapView = () => {
               placeholder="Search cities, regions, or coordinates..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm"
+              className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm bg-white text-gray-900"
             />
             {searchQuery && (
               <div className="absolute top-full left-0 right-0 bg-white border border-gray-200 rounded-lg shadow-lg mt-1 z-10">
@@ -337,14 +343,83 @@ const MapView = () => {
       </div>
 
       {/* Map Container */}
-      <div className="bg-white rounded-lg shadow-md overflow-hidden" style={{ height: '600px' }}>
+      <div className="bg-white rounded-lg shadow-md overflow-hidden relative" style={{ height: '600px' }}>
+        
+        
+        
+        {/* Location Details Panel */}
+        {selectedLocation && (
+          <div className="absolute top-4 left-4 z-[1000] bg-white/95 backdrop-blur-sm rounded-xl shadow-xl p-6 max-w-sm">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-xl font-bold text-gray-900">{selectedLocation.name}</h3>
+              <button
+                onClick={() => setSelectedLocation(null)}
+                className="text-gray-400 hover:text-gray-600 transition"
+              >
+                ✕
+              </button>
+            </div>
+            
+            <div className="space-y-4">
+              {/* AQI Status */}
+              <div className="flex items-center space-x-3">
+                <div 
+                  className="w-4 h-4 rounded-full"
+                  style={{ backgroundColor: getAQIColor(selectedLocation.aqi) }}
+                ></div>
+                <div>
+                  <div className="text-2xl font-bold" style={{ color: getAQIColor(selectedLocation.aqi) }}>
+                    AQI {selectedLocation.aqi}
+                  </div>
+                  <div className="text-sm text-gray-600">{getAQILevel(selectedLocation.aqi)}</div>
+                </div>
+              </div>
+              
+              {/* Health Advice */}
+              <div className="bg-blue-50 rounded-lg p-3">
+                <div className="text-sm font-medium text-blue-900 mb-1">Health Advice</div>
+                <div className="text-sm text-blue-800">{getHealthAdvice(selectedLocation.aqi)}</div>
+              </div>
+              
+              {/* Details Grid */}
+              <div className="grid grid-cols-2 gap-3 text-sm">
+                <div className="bg-gray-50 rounded-lg p-2">
+                  <div className="text-gray-600">PM2.5</div>
+                  <div className="font-semibold">{selectedLocation.pm25} µg/m³</div>
+                </div>
+                <div className="bg-gray-50 rounded-lg p-2">
+                  <div className="text-gray-600">Source</div>
+                  <div className="font-semibold">{selectedLocation.source}</div>
+                </div>
+                <div className="bg-gray-50 rounded-lg p-2">
+                  <div className="text-gray-600">Confidence</div>
+                  <div className="font-semibold">{selectedLocation.confidence}%</div>
+                </div>
+                <div className="bg-gray-50 rounded-lg p-2">
+                  <div className="text-gray-600">Coordinates</div>
+                  <div className="font-semibold text-xs">{selectedLocation.lat.toFixed(2)}, {selectedLocation.lon.toFixed(2)}</div>
+                </div>
+              </div>
+              
+              {/* Action Buttons */}
+              <div className="flex space-x-2">
+                <button className="flex-1 bg-blue-600 text-white py-2 px-3 rounded-lg text-sm font-medium hover:bg-blue-700 transition">
+                  View Forecast
+                </button>
+                <button className="flex-1 bg-gray-100 text-gray-700 py-2 px-3 rounded-lg text-sm font-medium hover:bg-gray-200 transition">
+                  Share Location
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
         <MapContainer
           center={[39.8283, -98.5795]}
           zoom={4}
           style={{ height: '100%', width: '100%' }}
         >
           <TileLayer
-            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+            attribution={getBasemapAttribution()}
             url={getBasemapUrl()}
             key={basemap}
           />
@@ -356,78 +431,38 @@ const MapView = () => {
               radius={getMarkerRadius(location.aqi)}
               pathOptions={{
                 color: '#ffffff',
-                weight: 2,
+                weight: 3,
                 fillColor: getAQIColor(location.aqi),
-                fillOpacity: 0.6,
+                fillOpacity: 0.7,
+              }}
+              eventHandlers={{
+                click: (e) => {
+                  e.originalEvent.stopPropagation();
+                  setSelectedLocation(location);
+                }
               }}
             >
-              <Popup>
-                <div className="min-w-[280px]">
-                  {/* Header */}
-                  <div className="bg-gradient-to-r from-blue-50 to-indigo-50 -m-2 mb-3 p-3 rounded-t-lg">
-                    <h3 className="font-bold text-lg text-gray-900">{location.name}</h3>
-                  </div>
-
-                  {/* AQI Display */}
-                  <div className="flex items-center justify-between mb-3">
-                    <div>
-                      <div className="text-sm text-gray-600 mb-1">AQI</div>
-                      <div className="flex items-center space-x-2">
-                        <span 
-                          className="text-3xl font-extrabold"
-                          style={{ color: getAQIColor(location.aqi) }}
-                        >
-                          {location.aqi}
-                        </span>
-                        <span className="text-sm font-semibold text-gray-700">
-                          {getAQILevel(location.aqi)}
-                        </span>
-                      </div>
+              {/* Only show popup if no location is selected (to avoid double display) */}
+              {!selectedLocation && (
+                <Popup>
+                  <div className="text-center p-1">
+                    <div className="font-bold">{location.name}</div>
+                    <div className="text-lg font-bold" style={{ color: getAQIColor(location.aqi) }}>
+                      AQI {location.aqi}
                     </div>
-                    <div className={`px-3 py-1 rounded-full text-xs font-semibold text-white`}
-                         style={{ backgroundColor: getAQIColor(location.aqi) }}>
-                      {getAQILevel(location.aqi).split(' ')[0]}
-                    </div>
-                  </div>
-
-                  {/* Main Pollutant */}
-                  <div className="bg-gray-50 rounded-lg p-2 mb-3">
-                    <div className="text-xs text-gray-600 mb-1">Main Pollutant</div>
-                    <div className="font-semibold text-gray-900">PM2.5: {location.pm25} µg/m³</div>
-                  </div>
-
-                  {/* Health Tip */}
-                  <div className="border-l-4 border-blue-500 pl-3 py-2 bg-blue-50 rounded mb-3">
-                    <div className="text-xs font-semibold text-blue-900 mb-1">Health Tip</div>
-                    <div className="text-sm text-blue-800">{getHealthTip(location.aqi)}</div>
-                  </div>
-
-                  {/* Metadata */}
-                  <div className="flex items-center justify-between text-xs text-gray-500 pt-2 border-t">
-                    <div className="flex items-center space-x-1">
-                      <Clock className="w-3 h-3" />
-                      <span>Updated {getTimeAgo()}</span>
-                    </div>
-                    <div className="flex items-center space-x-1">
-                      <CheckCircle className="w-3 h-3" />
-                      <span>{location.source}</span>
-                    </div>
-                  </div>
-                  <div className="text-xs text-gray-500 mt-1">
-                    Confidence: {location.confidence}%
-                  </div>
-
-                  {/* Action Buttons */}
-                  <div className="flex space-x-2 mt-3 pt-3 border-t">
-                    <button className="flex-1 bg-blue-600 text-white text-xs font-semibold py-2 px-3 rounded hover:bg-blue-700 transition">
-                      View Forecast
-                    </button>
-                    <button className="flex-1 border border-gray-300 text-gray-700 text-xs font-semibold py-2 px-3 rounded hover:bg-gray-50 transition">
-                      Set Alert
+                    <div className="text-xs text-gray-600">{getAQILevel(location.aqi)}</div>
+                    <button 
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setSelectedLocation(location);
+                      }}
+                      className="mt-2 bg-blue-600 text-white px-3 py-1 rounded text-xs hover:bg-blue-700 transition"
+                    >
+                      View Details
                     </button>
                   </div>
-                </div>
-              </Popup>
+                </Popup>
+              )}
             </Circle>
           ))}
         </MapContainer>
