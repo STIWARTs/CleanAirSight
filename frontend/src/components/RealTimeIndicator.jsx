@@ -18,9 +18,9 @@ const RealTimeIndicator = () => {
     const rotateSource = setInterval(() => {
       const sources = [
         'NASA TEMPO Satellite',
-        'OpenAQ Ground Sensors',
         'EPA AirNow Network',
-        'OpenWeatherMap',
+        'Ground Sensors',
+        'Weather Data',
         'All Sources'
       ];
       setDataSource(sources[Math.floor(Math.random() * sources.length)]);
@@ -62,13 +62,13 @@ const RealTimeIndicator = () => {
       </div>
 
       {/* Data Source */}
-      <div className="hidden md:flex items-center space-x-2 text-gray-600">
+      <div className="hidden md:flex items-center space-x-2 text-blue-100">
         <Wifi className="w-4 h-4" />
-        <span className="text-xs">{dataSource}</span>
+        <span className="text-xs font-medium">{dataSource}</span>
       </div>
 
       {/* Last Update */}
-      <div className="text-xs text-gray-500">
+      <div className="text-xs text-blue-100 font-medium">
         Updated {getTimeSinceUpdate()}
       </div>
     </div>
