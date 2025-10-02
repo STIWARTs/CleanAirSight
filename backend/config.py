@@ -33,7 +33,8 @@ class Settings(BaseSettings):
     model_retrain_interval_hours: int = 24
     forecast_horizon_hours: int = 24
     
-    # Data Refresh Intervals (minutes)
+    # Refresh intervals (in minutes)
+    environment: str = "production"
     tempo_refresh_interval: int = 60
     ground_refresh_interval: int = 15
     weather_refresh_interval: int = 60
