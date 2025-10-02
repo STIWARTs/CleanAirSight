@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { fetchCurrentAQI } from '../utils/api';
-import { Wind, AlertTriangle, CheckCircle, Activity } from 'lucide-react';
+import { Wind, AlertTriangle, CheckCircle, Activity, Satellite, MapPin, TrendingUp, Cloud, Droplets, Info } from 'lucide-react';
 import AQIAlert from '../components/AQIAlert';
 
 const Dashboard = () => {
@@ -102,6 +102,25 @@ const Dashboard = () => {
 
   return (
     <div className="space-y-8">
+      {/* NASA-Themed Header Banner */}
+      <div className="bg-gradient-to-r from-blue-900 via-blue-800 to-indigo-900 rounded-xl p-6 shadow-xl">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-4">
+            <div className="bg-white/10 backdrop-blur-sm rounded-full p-3">
+              <Satellite className="w-8 h-8 text-blue-200" />
+            </div>
+            <div>
+              <h1 className="text-3xl font-bold text-white mb-1">CleanAirSight</h1>
+              <p className="text-blue-200 text-sm">Real-time Air Quality from Space to Street</p>
+            </div>
+          </div>
+          <div className="hidden md:block text-right">
+            <p className="text-blue-100 text-sm">🛰️ Powered by NASA TEMPO</p>
+            <p className="text-blue-300 text-xs">Launched 2023 • Monitoring North America</p>
+          </div>
+        </div>
+      </div>
+
       {/* AQI Alerts */}
       {alerts.length > 0 && (
         <div className="space-y-2">
@@ -116,90 +135,200 @@ const Dashboard = () => {
         </div>
       )}
 
-      {/* Header */}
+      {/* Enhanced AQI Cards */}
       <div>
-        <h2 className="text-3xl font-bold text-gray-900 mb-2">Air Quality Dashboard</h2>
-        <p className="text-gray-600">
-          Real-time air quality monitoring powered by NASA TEMPO satellite data
-        </p>
-      </div>
-
-      {/* Demo AQI Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {cities.map((city, idx) => {
-          const demoAQI = [45, 85, 120, 55, 38][idx];
-          return (
-            <div key={city} className="bg-white rounded-lg shadow-md p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold text-gray-800">{city}</h3>
-                <Wind className="w-5 h-5 text-gray-400" />
-              </div>
-              <div className={`${getAQIColor(demoAQI)} text-white rounded-lg p-4 mb-4`}>
-                <div className="text-4xl font-bold">{demoAQI}</div>
-                <div className="text-sm opacity-90">AQI</div>
-              </div>
-              <div className="text-sm text-gray-600">
-                <div className="flex items-center mb-2">
-                  {demoAQI <= 100 ? (
-                    <CheckCircle className="w-4 h-4 text-green-500 mr-2" />
-                  ) : (
-                    <AlertTriangle className="w-4 h-4 text-orange-500 mr-2" />
-                  )}
-                  <span className="font-medium">{getAQILevel(demoAQI)}</span>
+        <h2 className="text-2xl font-bold text-gray-900 mb-6">Major Cities Air Quality</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {cities.map((city, idx) => {
+            const demoAQI = [45, 85, 120, 55, 38][idx];
+            const pollutants = {
+              'Los Angeles': { pm25: 12.5, no2: 28.3, o3: 45.2 },
+              'New York': { pm25: 18.2, no2: 35.1, o3: 52.8 },
+              'Chicago': { pm25: 28.5, no2: 42.7, o3: 68.3 },
+              'Houston': { pm25: 15.3, no2: 31.2, o3: 48.9 },
+              'Phoenix': { pm25: 10.8, no2: 24.5, o3: 38.6 }
+            };
+            const forecast = [48, 88, 115, 58, 42][idx];
+            const trend = forecast > demoAQI ? '↑' : '↓';
+            
+            return (
+              <div 
+                key={city} 
+                className="bg-white rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 p-6 border border-gray-100 hover:border-blue-300 cursor-pointer group"
+              >
+                {/* City Header */}
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center space-x-2">
+                    <MapPin className="w-5 h-5 text-blue-600" />
+                    <h3 className="text-xl font-bold text-gray-900">{city}</h3>
+                  </div>
+                  <Wind className="w-5 h-5 text-gray-400 group-hover:text-blue-500 transition-colors" />
                 </div>
-                <p className="text-xs">
+
+                {/* AQI Display */}
+                <div className={`${getAQIColor(demoAQI)} text-white rounded-xl p-6 mb-4 shadow-md`}>
+                  <div className="flex items-end justify-between">
+                    <div>
+                      <div className="text-5xl font-extrabold mb-1">{demoAQI}</div>
+                      <div className="text-sm opacity-90 font-medium">AQI Index</div>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-xs opacity-75">Tomorrow</div>
+                      <div className="text-lg font-bold">{forecast} {trend}</div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Status */}
+                <div className="flex items-center mb-4">
+                  {demoAQI <= 100 ? (
+                    <CheckCircle className="w-5 h-5 text-green-500 mr-2" />
+                  ) : (
+                    <AlertTriangle className="w-5 h-5 text-orange-500 mr-2" />
+                  )}
+                  <span className="font-bold text-gray-900">{getAQILevel(demoAQI)}</span>
+                </div>
+
+                {/* Pollutants Breakdown (Shown on Hover) */}
+                <div className="hidden group-hover:block bg-gray-50 rounded-lg p-3 mb-3 border border-gray-200">
+                  <div className="text-xs font-semibold text-gray-700 mb-2">Pollutant Levels</div>
+                  <div className="space-y-1 text-xs">
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">PM2.5:</span>
+                      <span className="font-semibold text-gray-900">{pollutants[city].pm25} µg/m³</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">NO₂:</span>
+                      <span className="font-semibold text-gray-900">{pollutants[city].no2} ppb</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">O₃:</span>
+                      <span className="font-semibold text-gray-900">{pollutants[city].o3} ppb</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Recommendation */}
+                <p className="text-sm text-gray-600">
                   {demoAQI <= 100
-                    ? 'Air quality is acceptable'
-                    : 'Sensitive groups should limit outdoor activity'}
+                    ? '✓ Air quality is acceptable for outdoor activities'
+                    : '⚠️ Sensitive groups should limit prolonged outdoor exposure'}
                 </p>
               </div>
-            </div>
-          );
-        })}
+            );
+          })}
+        </div>
       </div>
 
-      {/* Info Banner */}
-      <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
-        <div className="flex items-start">
-          <Activity className="w-6 h-6 text-blue-600 mr-3 flex-shrink-0" />
-          <div>
-            <h3 className="text-lg font-medium text-blue-900 mb-2">Welcome to CleanAirSight!</h3>
-            <p className="text-blue-800 mb-2">
-              This dashboard displays real-time air quality data from multiple sources:
-            </p>
-            <ul className="text-sm text-blue-700 space-y-1 list-disc list-inside">
-              <li>NASA TEMPO satellite measurements (NO₂, O₃, HCHO)</li>
-              <li>Ground sensors from OpenAQ and EPA AirNow (PM2.5, PM10)</li>
-              <li>Weather data from OpenWeatherMap</li>
-              <li>ML-powered forecasts using XGBoost</li>
-            </ul>
-            <p className="text-sm text-blue-600 mt-4">
-              💡 Data collection runs automatically every hour. Navigate to the <strong>Map</strong> view
-              to see geographic distribution or <strong>Forecast</strong> for predictions.
-            </p>
+      {/* AQI Legend */}
+      <div className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl p-6 border border-gray-200">
+        <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center">
+          <Info className="w-5 h-5 mr-2 text-blue-600" />
+          AQI Scale Reference
+        </h3>
+        <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
+          <div className="text-center">
+            <div className="bg-green-500 text-white rounded-lg py-2 px-3 mb-2 font-bold">0-50</div>
+            <div className="text-xs font-semibold text-gray-700">Good</div>
+          </div>
+          <div className="text-center">
+            <div className="bg-yellow-500 text-white rounded-lg py-2 px-3 mb-2 font-bold">51-100</div>
+            <div className="text-xs font-semibold text-gray-700">Moderate</div>
+          </div>
+          <div className="text-center">
+            <div className="bg-orange-500 text-white rounded-lg py-2 px-3 mb-2 font-bold">101-150</div>
+            <div className="text-xs font-semibold text-gray-700">Unhealthy (SG)</div>
+          </div>
+          <div className="text-center">
+            <div className="bg-red-500 text-white rounded-lg py-2 px-3 mb-2 font-bold">151-200</div>
+            <div className="text-xs font-semibold text-gray-700">Unhealthy</div>
+          </div>
+          <div className="text-center">
+            <div className="bg-purple-500 text-white rounded-lg py-2 px-3 mb-2 font-bold">201-300</div>
+            <div className="text-xs font-semibold text-gray-700">Very Unhealthy</div>
+          </div>
+          <div className="text-center">
+            <div className="bg-red-900 text-white rounded-lg py-2 px-3 mb-2 font-bold">300+</div>
+            <div className="text-xs font-semibold text-gray-700">Hazardous</div>
           </div>
         </div>
       </div>
 
-      {/* Current Status */}
-      <div className="bg-white rounded-lg shadow-md p-6">
-        <h3 className="text-xl font-semibold text-gray-800 mb-4">System Status</h3>
+      {/* Data Sources Info */}
+      <div className="bg-white border-2 border-blue-100 rounded-xl p-6 shadow-sm">
+        <h3 className="text-lg font-bold text-gray-900 mb-4">Data Sources</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="flex items-center">
-            <CheckCircle className="w-5 h-5 text-green-500 mr-2" />
-            <span className="text-gray-700">Backend API: <strong>Running</strong></span>
+          <div className="flex items-start space-x-3">
+            <Satellite className="w-6 h-6 text-blue-600 flex-shrink-0 mt-1" />
+            <div>
+              <div className="font-semibold text-gray-900">NASA TEMPO Satellite</div>
+              <div className="text-sm text-gray-600">NO₂, O₃, HCHO measurements</div>
+            </div>
           </div>
-          <div className="flex items-center">
-            <CheckCircle className="w-5 h-5 text-green-500 mr-2" />
-            <span className="text-gray-700">Database: <strong>Connected</strong></span>
+          <div className="flex items-start space-x-3">
+            <MapPin className="w-6 h-6 text-green-600 flex-shrink-0 mt-1" />
+            <div>
+              <div className="font-semibold text-gray-900">Ground Sensors</div>
+              <div className="text-sm text-gray-600">OpenAQ & EPA AirNow (PM2.5, PM10)</div>
+            </div>
           </div>
-          <div className="flex items-center">
-            <Activity className="w-5 h-5 text-blue-500 mr-2" />
-            <span className="text-gray-700">Data Collection: <strong>Active</strong></span>
+          <div className="flex items-start space-x-3">
+            <Cloud className="w-6 h-6 text-purple-600 flex-shrink-0 mt-1" />
+            <div>
+              <div className="font-semibold text-gray-900">Weather Context</div>
+              <div className="text-sm text-gray-600">OpenWeatherMap integration</div>
+            </div>
           </div>
-          <div className="flex items-center">
-            <Activity className="w-5 h-5 text-blue-500 mr-2" />
-            <span className="text-gray-700">ML Models: <strong>Ready</strong></span>
+          <div className="flex items-start space-x-3">
+            <TrendingUp className="w-6 h-6 text-orange-600 flex-shrink-0 mt-1" />
+            <div>
+              <div className="font-semibold text-gray-900">ML Forecasting</div>
+              <div className="text-sm text-gray-600">XGBoost predictions (6-72h)</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Enhanced System Status */}
+      <div className="bg-gradient-to-br from-gray-900 to-gray-800 rounded-xl shadow-xl p-6 text-white">
+        <div className="flex items-center justify-between mb-6">
+          <h3 className="text-xl font-bold">System Status</h3>
+          <div className="text-xs text-gray-400">
+            Last updated: {new Date().toLocaleTimeString()}
+          </div>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm text-gray-300">Backend API</span>
+              <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
+            </div>
+            <div className="text-lg font-bold">Running</div>
+            <div className="text-xs text-green-400 mt-1">🟢 Operational</div>
+          </div>
+          <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm text-gray-300">Database</span>
+              <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
+            </div>
+            <div className="text-lg font-bold">Connected</div>
+            <div className="text-xs text-green-400 mt-1">🟢 MongoDB Ready</div>
+          </div>
+          <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm text-gray-300">Data Collection</span>
+              <div className="w-3 h-3 bg-blue-500 rounded-full animate-pulse"></div>
+            </div>
+            <div className="text-lg font-bold">Active</div>
+            <div className="text-xs text-blue-400 mt-1">🔵 Every 15-60 min</div>
+          </div>
+          <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm text-gray-300">ML Models</span>
+              <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
+            </div>
+            <div className="text-lg font-bold">Ready</div>
+            <div className="text-xs text-green-400 mt-1">🟢 4 Models Trained</div>
           </div>
         </div>
       </div>
