@@ -156,10 +156,19 @@ const Dashboard = () => {
       {/* Enhanced AQI Cards */}
       <div>
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-3xl font-extrabold text-gray-900">Major Cities Air Quality</h2>
-          <div className="text-sm text-gray-500">Live updates • Refreshes every 5 minutes</div>
+          <div>
+            <h2 className="text-3xl font-extrabold text-gray-900">Major Cities Air Quality</h2>
+            <p className="text-gray-600 mt-1">Real-time monitoring across North America</p>
+          </div>
+          <div className="text-right">
+            <div className="flex items-center space-x-2 text-sm text-gray-500 mb-1">
+              <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+              <span>Live updates</span>
+            </div>
+            <div className="text-xs text-gray-400">Refreshes every 5 minutes</div>
+          </div>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {cities.map((city, idx) => {
             const demoAQI = [45, 85, 120, 55, 38][idx];
             const pollutants = {
@@ -175,7 +184,7 @@ const Dashboard = () => {
             return (
               <div 
                 key={city} 
-                className="bg-white rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 p-6 border border-gray-100 hover:border-blue-300 cursor-pointer group"
+                className="bg-white rounded-xl shadow-lg hover:shadow-2xl transform hover:-translate-y-2 transition-all duration-300 p-6 border border-gray-100 hover:border-blue-300 cursor-pointer group relative z-10 hover:z-20"
               >
                 {/* City Header */}
                 <div className="flex items-center justify-between mb-4">
@@ -216,30 +225,48 @@ const Dashboard = () => {
                   <span className="font-bold text-gray-900">{getAQILevel(demoAQI)}</span>
                 </div>
 
-                {/* Pollutants Breakdown (Shown on Hover) */}
-                <div className="hidden group-hover:block bg-gray-50 rounded-lg p-3 mb-3 border border-gray-200">
-                  <div className="text-xs font-semibold text-gray-700 mb-2">Pollutant Levels</div>
-                  <div className="space-y-1 text-xs">
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">PM2.5:</span>
-                      <span className="font-semibold text-gray-900">{pollutants[city].pm25} µg/m³</span>
+                {/* Pollutants Breakdown (Always Visible but Compact) */}
+                <div className="bg-gray-50 rounded-lg p-3 mb-3 border border-gray-200 group-hover:bg-blue-50 group-hover:border-blue-200 transition-all duration-300">
+                  <div className="text-xs font-semibold text-gray-700 mb-2 group-hover:text-blue-800">Pollutant Levels</div>
+                  <div className="grid grid-cols-3 gap-2 text-xs">
+                    <div className="text-center">
+                      <div className="text-gray-600">PM2.5</div>
+                      <div className="font-bold text-gray-900">{pollutants[city].pm25}</div>
+                      <div className="text-gray-500">µg/m³</div>
                     </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">NO₂:</span>
-                      <span className="font-semibold text-gray-900">{pollutants[city].no2} ppb</span>
+                    <div className="text-center">
+                      <div className="text-gray-600">NO₂</div>
+                      <div className="font-bold text-gray-900">{pollutants[city].no2}</div>
+                      <div className="text-gray-500">ppb</div>
                     </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">O₃:</span>
-                      <span className="font-semibold text-gray-900">{pollutants[city].o3} ppb</span>
+                    <div className="text-center">
+                      <div className="text-gray-600">O₃</div>
+                      <div className="font-bold text-gray-900">{pollutants[city].o3}</div>
+                      <div className="text-gray-500">ppb</div>
                     </div>
                   </div>
                 </div>
 
-                {/* Health Advice */}
-                <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-3 border-l-4 border-blue-500">
-                  <p className="text-sm font-medium text-gray-800">
-                    {getHealthAdvice(demoAQI)}
-                  </p>
+                {/* Health Advice with Icon */}
+                <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-3 border-l-4 border-blue-500 group-hover:from-blue-100 group-hover:to-indigo-100 transition-all duration-300">
+                  <div className="flex items-start space-x-2">
+                    <Activity className="w-4 h-4 text-blue-600 flex-shrink-0 mt-0.5" />
+                    <p className="text-sm font-medium text-gray-800">
+                      {getHealthAdvice(demoAQI)}
+                    </p>
+                  </div>
+                </div>
+                
+                {/* Quick Actions (Shown on Hover) */}
+                <div className="opacity-0 group-hover:opacity-100 transition-all duration-300 mt-3">
+                  <div className="flex space-x-2">
+                    <button className="flex-1 bg-blue-600 text-white py-2 px-3 rounded-lg text-xs font-medium hover:bg-blue-700 transition">
+                      View Details
+                    </button>
+                    <button className="flex-1 bg-gray-100 text-gray-700 py-2 px-3 rounded-lg text-xs font-medium hover:bg-gray-200 transition">
+                      Set Alert
+                    </button>
+                  </div>
                 </div>
               </div>
             );
@@ -329,45 +356,45 @@ const Dashboard = () => {
       </div>
 
       {/* Enhanced System Status */}
-      <div className="bg-gradient-to-br from-gray-900 to-gray-800 rounded-xl shadow-xl p-6 text-white">
+      <div className="bg-gradient-to-br from-blue-50 to-indigo-100 rounded-xl shadow-xl p-6 border border-blue-200">
         <div className="flex items-center justify-between mb-6">
-          <h3 className="text-xl font-bold">System Status</h3>
-          <div className="text-xs text-gray-400">
+          <h3 className="text-xl font-bold text-gray-900">System Status</h3>
+          <div className="text-xs text-gray-600">
             Last updated: {new Date().toLocaleTimeString()}
           </div>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4">
+          <div className="bg-white/80 backdrop-blur-sm rounded-lg p-4 border border-white/50">
             <div className="flex items-center justify-between mb-2">
-              <span className="text-sm text-gray-300">Backend API</span>
+              <span className="text-sm text-gray-600">Backend API</span>
               <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
             </div>
-            <div className="text-lg font-bold">Running</div>
-            <div className="text-xs text-green-400 mt-1">🟢 Operational</div>
+            <div className="text-lg font-bold text-gray-900">Running</div>
+            <div className="text-xs text-green-600 mt-1">🟢 Operational</div>
           </div>
-          <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4">
+          <div className="bg-white/80 backdrop-blur-sm rounded-lg p-4 border border-white/50">
             <div className="flex items-center justify-between mb-2">
-              <span className="text-sm text-gray-300">Database</span>
+              <span className="text-sm text-gray-600">Database</span>
               <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
             </div>
-            <div className="text-lg font-bold">Connected</div>
-            <div className="text-xs text-green-400 mt-1">🟢 MongoDB Ready</div>
+            <div className="text-lg font-bold text-gray-900">Connected</div>
+            <div className="text-xs text-green-600 mt-1">🟢 MongoDB Ready</div>
           </div>
-          <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4">
+          <div className="bg-white/80 backdrop-blur-sm rounded-lg p-4 border border-white/50">
             <div className="flex items-center justify-between mb-2">
-              <span className="text-sm text-gray-300">Data Collection</span>
+              <span className="text-sm text-gray-600">Data Collection</span>
               <div className="w-3 h-3 bg-blue-500 rounded-full animate-pulse"></div>
             </div>
-            <div className="text-lg font-bold">Active</div>
-            <div className="text-xs text-blue-400 mt-1">🔵 Every 15-60 min</div>
+            <div className="text-lg font-bold text-gray-900">Active</div>
+            <div className="text-xs text-blue-600 mt-1">🔵 Every 15-60 min</div>
           </div>
-          <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4">
+          <div className="bg-white/80 backdrop-blur-sm rounded-lg p-4 border border-white/50">
             <div className="flex items-center justify-between mb-2">
-              <span className="text-sm text-gray-300">ML Models</span>
+              <span className="text-sm text-gray-600">ML Models</span>
               <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
             </div>
-            <div className="text-lg font-bold">Ready</div>
-            <div className="text-xs text-green-400 mt-1">🟢 4 Models Trained</div>
+            <div className="text-lg font-bold text-gray-900">Ready</div>
+            <div className="text-xs text-green-600 mt-1">🟢 4 Models Trained</div>
           </div>
         </div>
       </div>
