@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react';
 import { fetchCurrentAQI } from '../utils/api';
 import { Wind, AlertTriangle, CheckCircle, Activity } from 'lucide-react';
+import AQIAlert from '../components/AQIAlert';
 
 const Dashboard = () => {
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState(null);
   const [error, setError] = useState(null);
+  const [alerts, setAlerts] = useState([]);
 
   const cities = ['Los Angeles', 'New York', 'Chicago', 'Houston', 'Phoenix'];
 
@@ -14,6 +16,20 @@ const Dashboard = () => {
     // Refresh every 5 minutes
     const interval = setInterval(loadData, 300000);
     return () => clearInterval(interval);
+  }, []);
+
+  // Check for high AQI alerts
+  useEffect(() => {
+    const cityAQIs = [
+      { city: 'Los Angeles', aqi: 45 },
+      { city: 'New York', aqi: 85 },
+      { city: 'Chicago', aqi: 120 },
+      { city: 'Houston', aqi: 55 },
+      { city: 'Phoenix', aqi: 38 },
+    ];
+
+    const highAQI = cityAQIs.filter(c => c.aqi > 100);
+    setAlerts(highAQI);
   }, []);
 
   const loadData = async () => {
@@ -86,6 +102,20 @@ const Dashboard = () => {
 
   return (
     <div className="space-y-8">
+      {/* AQI Alerts */}
+      {alerts.length > 0 && (
+        <div className="space-y-2">
+          {alerts.map((alert, idx) => (
+            <AQIAlert
+              key={idx}
+              aqi={alert.aqi}
+              city={alert.city}
+              onClose={() => setAlerts(alerts.filter((_, i) => i !== idx))}
+            />
+          ))}
+        </div>
+      )}
+
       {/* Header */}
       <div>
         <h2 className="text-3xl font-bold text-gray-900 mb-2">Air Quality Dashboard</h2>

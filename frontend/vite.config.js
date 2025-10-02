@@ -12,6 +12,13 @@ export default defineConfig({
   server: {
     port: 3000,
     host: true,
+    watch: {
+      usePolling: true,  // Required for Docker on Windows
+      interval: 1000,
+    },
+    hmr: {
+      overlay: true,
+    },
     proxy: {
       '/api': {
         target: 'http://backend:8000',  // Use Docker service name

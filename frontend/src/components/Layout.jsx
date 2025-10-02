@@ -1,5 +1,7 @@
 import { Link, useLocation } from 'react-router-dom';
 import { Home, Map, TrendingUp, Info } from 'lucide-react';
+import NotificationCenter from './NotificationCenter';
+import RealTimeIndicator from './RealTimeIndicator';
 
 const Layout = ({ children }) => {
   const location = useLocation();
@@ -17,11 +19,17 @@ const Layout = ({ children }) => {
       <header className="bg-white shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-4">
-            <div className="flex items-center">
+            <div className="flex items-center space-x-4">
               <h1 className="text-2xl font-bold text-gray-900">CleanAirSight</h1>
-              <span className="ml-3 px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded-full">
+              <span className="px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded-full">
                 NASA TEMPO
               </span>
+              <div className="hidden lg:block">
+                <RealTimeIndicator />
+              </div>
+            </div>
+            <div className="flex items-center space-x-4">
+              <NotificationCenter />
             </div>
           </div>
         </div>
