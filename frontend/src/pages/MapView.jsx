@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, Circle } from 'react-leaflet';
 import { fetchMapData } from '../utils/api';
 import 'leaflet/dist/leaflet.css';
-import { MapPin, Wind, Clock, CheckCircle, TrendingUp, Search, Filter, Layers, Maximize2, Globe } from 'lucide-react';
+import { MapPin, Wind, Clock, CheckCircle, TrendingUp, Search, Filter, Layers, Maximize2, Globe, AlertTriangle, Info, Zap, Satellite, Navigation, RefreshCw, Download, Share2, Settings } from 'lucide-react';
 
 // Fix Leaflet default marker icon issue with Webpack
 import L from 'leaflet';
@@ -22,6 +22,10 @@ const MapView = () => {
   const [showFilters, setShowFilters] = useState(false);
   const [basemap, setBasemap] = useState('light');
   const [fullscreen, setFullscreen] = useState(false);
+  const [showHeatmap, setShowHeatmap] = useState(false);
+  const [autoRefresh, setAutoRefresh] = useState(false);
+  const [selectedLocation, setSelectedLocation] = useState(null);
+  const [mapStyle, setMapStyle] = useState('standard');
 
   // Demo locations with AQI data
   const demoLocations = [
@@ -41,12 +45,12 @@ const MapView = () => {
   }, []);
 
   const getAQIColor = (aqi) => {
-    if (aqi <= 50) return '#00e400';
-    if (aqi <= 100) return '#ffff00';
-    if (aqi <= 150) return '#ff7e00';
-    if (aqi <= 200) return '#ff0000';
-    if (aqi <= 300) return '#8f3f97';
-    return '#7e0023';
+    if (aqi <= 50) return '#10b981'; // Green
+    if (aqi <= 100) return '#f59e0b'; // Yellow
+    if (aqi <= 150) return '#f97316'; // Orange
+    if (aqi <= 200) return '#ef4444'; // Red
+    if (aqi <= 300) return '#8b5cf6'; // Purple
+    return '#7c2d12'; // Maroon
   };
 
   const getAQILevel = (aqi) => {
@@ -56,6 +60,27 @@ const MapView = () => {
     if (aqi <= 200) return 'Unhealthy';
     if (aqi <= 300) return 'Very Unhealthy';
     return 'Hazardous';
+  };
+
+  const getHealthAdvice = (aqi) => {
+    if (aqi <= 50) return 'Perfect for outdoor activities!';
+    if (aqi <= 100) return 'Acceptable for most people.';
+    if (aqi <= 150) return 'Sensitive groups should limit outdoor time.';
+    if (aqi <= 200) return 'Everyone should reduce outdoor activities.';
+    if (aqi <= 300) return 'Avoid outdoor activities.';
+    return 'Health emergency - stay indoors.';
+  };
+
+  const getWorstLocation = () => {
+    return filteredLocations.reduce((worst, current) => 
+      current.aqi > worst.aqi ? current : worst, filteredLocations[0] || {}
+    );
+  };
+
+  const getBestLocation = () => {
+    return filteredLocations.reduce((best, current) => 
+      current.aqi < best.aqi ? current : best, filteredLocations[0] || {}
+    );
   };
 
   const getHealthTip = (aqi) => {
@@ -114,49 +139,119 @@ const MapView = () => {
 
   return (
     <div className="space-y-4">
-      {/* Header with Controls */}
-      <div className="bg-white rounded-lg shadow-md p-4 mb-4">
+      {/* Enhanced Header with Status */}
+      <div className="bg-gradient-to-r from-blue-600 via-blue-700 to-indigo-800 rounded-xl shadow-lg p-6 mb-6 text-white">
         <div className="flex items-center justify-between mb-4">
           <div>
-            <h2 className="text-2xl font-bold text-gray-900">Air Quality Map</h2>
-            <div className="flex items-center space-x-4 text-sm text-gray-600 mt-1">
+            <h2 className="text-3xl font-bold mb-2">🗺️ Real-time Air Quality Map</h2>
+            <div className="flex items-center space-x-6 text-sm text-blue-200">
+              <div className="flex items-center">
+                <Satellite className="w-4 h-4 mr-1" />
+                <span>NASA TEMPO Live</span>
+              </div>
               <div className="flex items-center">
                 <MapPin className="w-4 h-4 mr-1" />
-                {filteredLocations.length} locations
+                <span>{filteredLocations.length} monitoring stations</span>
               </div>
               <div className="flex items-center">
                 <Clock className="w-4 h-4 mr-1" />
-                Updated {getTimeAgo()}
+                <span>Updated {getTimeAgo()}</span>
               </div>
+              {autoRefresh && (
+                <div className="flex items-center">
+                  <RefreshCw className="w-4 h-4 mr-1 animate-spin" />
+                  <span>Auto-refresh ON</span>
+                </div>
+              )}
             </div>
           </div>
-          <button
-            onClick={() => setFullscreen(!fullscreen)}
-            className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition"
-            title="Toggle fullscreen"
-          >
-            <Maximize2 className="w-5 h-5" />
-          </button>
+          
+          {/* Quick Actions */}
+          <div className="flex items-center space-x-2">
+            <button
+              onClick={() => setAutoRefresh(!autoRefresh)}
+              className={`p-2 rounded-lg transition ${
+                autoRefresh ? 'bg-green-500 text-white' : 'bg-white/20 text-white hover:bg-white/30'
+              }`}
+              title="Toggle auto-refresh"
+            >
+              <RefreshCw className={`w-5 h-5 ${autoRefresh ? 'animate-spin' : ''}`} />
+            </button>
+            <button
+              onClick={() => setFullscreen(!fullscreen)}
+              className="p-2 bg-white/20 text-white hover:bg-white/30 rounded-lg transition"
+              title="Toggle fullscreen"
+            >
+              <Maximize2 className="w-5 h-5" />
+            </button>
+            <button className="p-2 bg-white/20 text-white hover:bg-white/30 rounded-lg transition" title="Export data">
+              <Download className="w-5 h-5" />
+            </button>
+            <button className="p-2 bg-white/20 text-white hover:bg-white/30 rounded-lg transition" title="Share map">
+              <Share2 className="w-5 h-5" />
+            </button>
+          </div>
         </div>
+        
+        {/* Overall Status Banner */}
+        <div className="bg-white/10 rounded-lg p-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-center">
+            <div>
+              <div className="text-2xl font-bold">{getWorstLocation()?.name || 'N/A'}</div>
+              <div className="text-sm text-blue-200">Worst Air Quality</div>
+              <div className="text-lg font-semibold" style={{ color: '#ff6b6b' }}>AQI {getWorstLocation()?.aqi || 0}</div>
+            </div>
+            <div>
+              <div className="text-2xl font-bold">{getBestLocation()?.name || 'N/A'}</div>
+              <div className="text-sm text-blue-200">Best Air Quality</div>
+              <div className="text-lg font-semibold" style={{ color: '#51cf66' }}>AQI {getBestLocation()?.aqi || 0}</div>
+            </div>
+            <div>
+              <div className="text-2xl font-bold">{Math.round(filteredLocations.reduce((sum, loc) => sum + loc.aqi, 0) / filteredLocations.length) || 0}</div>
+              <div className="text-sm text-blue-200">Average AQI</div>
+              <div className="text-lg font-semibold text-yellow-300">Across All Stations</div>
+            </div>
+          </div>
+        </div>
+      </div>
 
-        {/* Search and Controls */}
-        <div className="flex items-center space-x-3">
-          {/* Search Bar */}
+      {/* Enhanced Controls */}
+      <div className="bg-white rounded-lg shadow-lg p-6">
+        {/* Enhanced Search and Controls */}
+        <div className="flex flex-col lg:flex-row items-center space-y-3 lg:space-y-0 lg:space-x-4">
+          {/* Search Bar with Suggestions */}
           <div className="flex-1 relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
             <input
               type="text"
-              placeholder="Search cities..."
+              placeholder="Search cities, regions, or coordinates..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm"
             />
+            {searchQuery && (
+              <div className="absolute top-full left-0 right-0 bg-white border border-gray-200 rounded-lg shadow-lg mt-1 z-10">
+                {filteredLocations.slice(0, 3).map((location, idx) => (
+                  <div
+                    key={idx}
+                    className="p-3 hover:bg-gray-50 cursor-pointer border-b last:border-b-0"
+                    onClick={() => {
+                      setSelectedLocation(location);
+                      setSearchQuery('');
+                    }}
+                  >
+                    <div className="font-medium">{location.name}</div>
+                    <div className="text-sm text-gray-500">AQI {location.aqi} • {getAQILevel(location.aqi)}</div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
-          {/* Basemap Switcher */}
+          {/* Map Style Switcher */}
           <div className="flex items-center space-x-1 bg-gray-100 rounded-lg p-1">
             {[
-              { key: 'light', icon: '🗺️', label: 'Light' },
+              { key: 'light', icon: '🗺️', label: 'Standard' },
               { key: 'satellite', icon: '🛰️', label: 'Satellite' },
               { key: 'terrain', icon: '🏔️', label: 'Terrain' },
               { key: 'dark', icon: '🌙', label: 'Dark' }
@@ -164,7 +259,7 @@ const MapView = () => {
               <button
                 key={map.key}
                 onClick={() => setBasemap(map.key)}
-                className={`px-3 py-1 text-xs font-medium rounded transition ${
+                className={`px-3 py-2 text-xs font-medium rounded transition ${
                   basemap === map.key
                     ? 'bg-white text-blue-600 shadow-sm'
                     : 'text-gray-600 hover:text-gray-900'
@@ -176,16 +271,33 @@ const MapView = () => {
             ))}
           </div>
 
-          {/* Filter Toggle */}
-          <button
-            onClick={() => setShowFilters(!showFilters)}
-            className={`p-2 rounded-lg transition ${
-              showFilters ? 'bg-blue-100 text-blue-600' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
-            }`}
-            title="Toggle filters"
-          >
-            <Filter className="w-5 h-5" />
-          </button>
+          {/* View Options */}
+          <div className="flex items-center space-x-2">
+            <button
+              onClick={() => setShowHeatmap(!showHeatmap)}
+              className={`flex items-center px-3 py-2 text-xs font-medium rounded-lg transition ${
+                showHeatmap ? 'bg-orange-100 text-orange-800' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+              }`}
+            >
+              <Layers className="w-4 h-4 mr-1" />
+              Heatmap
+            </button>
+            
+            <button
+              onClick={() => setShowFilters(!showFilters)}
+              className={`flex items-center px-3 py-2 text-xs font-medium rounded-lg transition ${
+                showFilters ? 'bg-blue-100 text-blue-600' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+              }`}
+            >
+              <Filter className="w-4 h-4 mr-1" />
+              Filters
+            </button>
+            
+            <button className="flex items-center px-3 py-2 bg-gray-100 text-gray-600 hover:bg-gray-200 text-xs font-medium rounded-lg transition">
+              <Settings className="w-4 h-4 mr-1" />
+              Settings
+            </button>
+          </div>
         </div>
 
         {/* Expandable Filters */}
