@@ -1,5 +1,6 @@
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.interval import IntervalTrigger
+from apscheduler.triggers.cron import CronTrigger
 from datetime import datetime
 import logging
 from typing import Optional
@@ -10,6 +11,7 @@ from data_ingestion.weather_client import WeatherClient
 from data_processing.harmonizer import DataHarmonizer
 from data_processing.validator import DataValidator
 from ml.forecasting_engine import ForecastingEngine
+from services.email_service import EmailService
 from config import settings
 
 logger = logging.getLogger(__name__)
@@ -36,6 +38,10 @@ class DataScheduler:
         self.harmonizer = DataHarmonizer()
         self.validator = DataValidator(settings.discrepancy_threshold)
         self.forecasting_engine = ForecastingEngine()
+        self.email_service = EmailService(
+            smtp_server=settings.smtp_server,
+            smtp_port=settings.smtp_port
+        )
         
         self.scheduler = AsyncIOScheduler()
         
@@ -97,6 +103,16 @@ class DataScheduler:
             replace_existing=True
         )
         
+        # Job 7: Send daily AQI email alerts (every day at 8 AM)
+        from apscheduler.triggers.cron import CronTrigger
+        self.scheduler.add_job(
+            self.send_daily_aqi_alerts,
+            trigger=CronTrigger(hour=8, minute=0),
+            id="daily_email_alerts",
+            name="Send daily AQI email alerts",
+            replace_existing=True
+        )
+        
         self.scheduler.start()
         logger.info("Scheduler started successfully")
         
@@ -122,7 +138,128 @@ class DataScheduler:
             # TEMPO data may not be immediately available
             # await self.fetch_tempo_data()
         except Exception as e:
-            logger.error(f"Error in initial data fetch: {e}")
+            logger.error(f"Error in model retraining: {e}")
+    
+    async def send_daily_aqi_alerts(self):
+        """Send daily AQI alerts to all active subscribers"""
+        logger.info("Starting daily AQI alert job...")
+        
+        try:
+            # Get all active subscribers
+            subscribers = await self.db.subscribers.find({"subscription_status": "active"}).to_list(length=None)
+            logger.info(f"Found {len(subscribers)} active subscribers")
+            
+            for subscriber in subscribers:
+                try:
+                    # Get current AQI data for subscriber's location
+                    location = subscriber["location"]
+                    
+                    # Query harmonized data for the subscriber's location
+                    pipeline = [
+                        {
+                            "$geoNear": {
+                                "near": {
+                                    "type": "Point",
+                                    "coordinates": [location["lon"], location["lat"]]
+                                },
+                                "distanceField": "distance",
+                                "maxDistance": 50000,  # 50km radius
+                                "spherical": True,
+                                "query": {
+                                    "timestamp": {
+                                        "$gte": datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
+                                    }
+                                }
+                            }
+                        },
+                        {
+                            "$group": {
+                                "_id": "$pollutant_type",
+                                "avg_concentration": {"$avg": "$concentration"},
+                                "latest_timestamp": {"$max": "$timestamp"}
+                            }
+                        }
+                    ]
+                    
+                    current_data = await self.db.harmonized_data.aggregate(pipeline).to_list(length=None)
+                    
+                    # Calculate overall AQI (simplified calculation)
+                    current_aqi = self.calculate_overall_aqi(current_data)
+                    
+                    # Get forecast data
+                    forecast_data = await self.db.forecasts.find_one(
+                        {"city": location["city"]},
+                        sort=[("timestamp", -1)]
+                    )
+                    
+                    forecast_aqi = forecast_data.get("aqi", current_aqi) if forecast_data else current_aqi
+                    
+                    # Check if alert should be sent based on threshold
+                    alert_threshold = subscriber["preferences"].get("alert_threshold", 100)
+                    
+                    if current_aqi >= alert_threshold or forecast_aqi >= alert_threshold:
+                        # Prepare AQI data for email
+                        aqi_data = {
+                            "city": location["city"],
+                            "current_aqi": current_aqi,
+                            "forecast_aqi": forecast_aqi,
+                            "timestamp": datetime.utcnow().isoformat()
+                        }
+                        
+                        # Send email alert
+                        success = await self.email_service.send_aqi_alert(subscriber["email"], aqi_data)
+                        
+                        if success:
+                            # Update last_sent timestamp
+                            await self.db.subscribers.update_one(
+                                {"email": subscriber["email"]},
+                                {"$set": {"last_sent": datetime.utcnow()}}
+                            )
+                            logger.info(f"Successfully sent alert to {subscriber['email']}")
+                        else:
+                            logger.error(f"Failed to send alert to {subscriber['email']}")
+                    else:
+                        logger.info(f"No alert needed for {subscriber['email']} (AQI: {current_aqi}, Threshold: {alert_threshold})")
+                        
+                except Exception as e:
+                    logger.error(f"Failed to process alert for {subscriber['email']}: {e}")
+                    continue
+            
+            logger.info("Daily AQI alert job completed")
+            
+        except Exception as e:
+            logger.error(f"Error in daily AQI alert job: {e}")
+    
+    def calculate_overall_aqi(self, pollutant_data):
+        """Calculate overall AQI from multiple pollutants (simplified)"""
+        if not pollutant_data:
+            return 50  # Default moderate AQI
+        
+        # Simple AQI calculation based on average concentrations
+        # In production, this should use proper AQI calculation formulas
+        aqi_values = []
+        
+        for pollutant in pollutant_data:
+            pollutant_type = pollutant["_id"]
+            concentration = pollutant["avg_concentration"]
+            
+            # Simplified AQI calculation (replace with proper EPA formulas)
+            if pollutant_type == "NO2":
+                aqi = min(concentration * 2, 500)  # Simplified conversion
+            elif pollutant_type == "O3":
+                aqi = min(concentration * 1.5, 500)
+            elif pollutant_type == "PM2.5":
+                aqi = min(concentration * 3, 500)
+            else:
+                aqi = min(concentration * 2, 500)
+            
+            aqi_values.append(int(aqi))
+        
+        # Return the maximum AQI (most restrictive)
+        return max(aqi_values) if aqi_values else 50
+
+
+# For testing
     
     async def fetch_tempo_data(self):
         """Fetch TEMPO satellite data"""

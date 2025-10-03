@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { fetchCurrentAQI } from '../utils/api';
 import { Wind, AlertTriangle, CheckCircle, Activity, Satellite, MapPin, TrendingUp, Cloud, Droplets, Info } from 'lucide-react';
 import AQIAlert from '../components/AQIAlert';
+import EmailSubscription from '../components/EmailSubscription';
 
 const Dashboard = () => {
   const [loading, setLoading] = useState(true);
@@ -398,6 +399,9 @@ const Dashboard = () => {
           </div>
         </div>
       </div>
+
+      {/* Email Subscription Section */}
+      <EmailSubscription />
     </div>
   );
 };

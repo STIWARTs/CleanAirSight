@@ -29,6 +29,12 @@ class Settings(BaseSettings):
     api_port: int = 8000
     cors_origins: str = "http://localhost:3000,http://localhost:5173"
     
+    # Email Service Settings
+    sender_email: str = "alerts@cleanairsight.com"
+    sender_password: str = ""
+    smtp_server: str = "smtp.gmail.com"
+    smtp_port: int = 587
+    
     # ML Model Settings
     model_retrain_interval_hours: int = 24
     forecast_horizon_hours: int = 24

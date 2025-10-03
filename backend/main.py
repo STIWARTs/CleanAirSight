@@ -1,10 +1,11 @@
 from fastapi import FastAPI, HTTPException, Query, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, HTMLResponse
 from typing import List, Optional
 from datetime import datetime, timedelta
 import logging
 from contextlib import asynccontextmanager
+import asyncio
 
 from config import settings
 from database import db
@@ -15,6 +16,32 @@ from data_processing.harmonizer import DataHarmonizer
 from data_processing.validator import DataValidator
 from ml.forecasting_engine import ForecastingEngine
 from scheduler import DataScheduler
+from services.email_service import EmailService
+from pydantic import BaseModel, EmailStr, Field
+
+# Define subscription models inline
+class SubscriptionRequest(BaseModel):
+    email: EmailStr
+    city: str = Field(..., min_length=2, max_length=100)
+    lat: float = Field(..., ge=-90, le=90)
+    lon: float = Field(..., ge=-180, le=180)
+    alert_threshold: int = Field(default=100, ge=0, le=500)
+    send_time: str = Field(default="08:00")
+    frequency: str = Field(default="daily")
+
+class SubscriptionResponse(BaseModel):
+    success: bool
+    message: str
+    subscriber_id: Optional[str] = None
+
+class UnsubscribeResponse(BaseModel):
+    success: bool
+    message: str
+
+class EmailPreviewResponse(BaseModel):
+    success: bool
+    html_content: str
+    subject: str
 
 # Configure logging
 logging.basicConfig(
@@ -81,6 +108,10 @@ app.add_middleware(
 harmonizer = DataHarmonizer()
 validator = DataValidator(discrepancy_threshold=settings.discrepancy_threshold)
 forecasting_engine = ForecastingEngine()
+email_service = EmailService(
+    smtp_server=settings.smtp_server,
+    smtp_port=settings.smtp_port
+)
 
 
 @app.get("/")
@@ -468,6 +499,177 @@ async def run_data_collection():
         logger.info("Data collection completed")
     except Exception as e:
         logger.error(f"Error in data collection: {e}")
+
+
+# Email Alert Subscription Endpoints
+
+@app.post("/api/subscribe", response_model=SubscriptionResponse)
+async def subscribe_to_alerts(subscription: SubscriptionRequest):
+    """Subscribe to daily AQI email alerts"""
+    try:
+        # Check if subscriber already exists
+        existing_subscriber = await db.get_db().subscribers.find_one({"email": subscription.email})
+        
+        if existing_subscriber:
+            # Update existing subscription
+            await db.get_db().subscribers.update_one(
+                {"email": subscription.email},
+                {
+                    "$set": {
+                        "location": {
+                            "city": subscription.city,
+                            "lat": subscription.lat,
+                            "lon": subscription.lon
+                        },
+                        "preferences": {
+                            "alert_threshold": subscription.alert_threshold,
+                            "send_time": subscription.send_time,
+                            "frequency": subscription.frequency
+                        },
+                        "subscription_status": "active",
+                        "updated_at": datetime.utcnow()
+                    }
+                }
+            )
+            message = f"Updated your subscription for {subscription.city}"
+        else:
+            # Create new subscription
+            subscriber_doc = {
+                "email": subscription.email,
+                "location": {
+                    "city": subscription.city,
+                    "lat": subscription.lat,
+                    "lon": subscription.lon
+                },
+                "preferences": {
+                    "alert_threshold": subscription.alert_threshold,
+                    "send_time": subscription.send_time,
+                    "frequency": subscription.frequency
+                },
+                "subscription_status": "active",
+                "created_at": datetime.utcnow(),
+                "last_sent": None
+            }
+            
+            result = await db.get_db().subscribers.insert_one(subscriber_doc)
+            message = f"Successfully subscribed to AQI alerts for {subscription.city}"
+        
+        # Send confirmation email
+        await email_service.send_confirmation_email(subscription.email, subscription.city)
+        
+        return SubscriptionResponse(
+            success=True,
+            message=message,
+            subscriber_id=str(result.inserted_id) if 'result' in locals() else None
+        )
+        
+    except Exception as e:
+        logger.error(f"Error in subscription: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to subscribe: {str(e)}")
+
+
+@app.delete("/api/unsubscribe/{email}", response_model=UnsubscribeResponse)
+async def unsubscribe_from_alerts(email: str):
+    """Unsubscribe from AQI email alerts"""
+    try:
+        result = await db.get_db().subscribers.update_one(
+            {"email": email},
+            {"$set": {"subscription_status": "cancelled", "cancelled_at": datetime.utcnow()}}
+        )
+        
+        if result.matched_count == 0:
+            raise HTTPException(status_code=404, detail="Subscriber not found")
+        
+        return UnsubscribeResponse(
+            success=True,
+            message="Successfully unsubscribed from AQI alerts"
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error in unsubscription: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to unsubscribe: {str(e)}")
+
+
+@app.get("/api/subscribers/preview/{email}", response_model=EmailPreviewResponse)
+async def preview_alert_email(email: str):
+    """Preview what the email alert will look like"""
+    try:
+        # Get subscriber info
+        subscriber = await db.get_db().subscribers.find_one({"email": email})
+        if not subscriber:
+            raise HTTPException(status_code=404, detail="Subscriber not found")
+        
+        # Generate sample AQI data
+        sample_aqi_data = {
+            "city": subscriber["location"]["city"],
+            "current_aqi": 85,
+            "forecast_aqi": 92,
+            "timestamp": datetime.utcnow().isoformat()
+        }
+        
+        # Generate email HTML
+        unsubscribe_link = f"http://localhost:8000/api/unsubscribe/{email}"
+        html_content = email_service.generate_email_template(sample_aqi_data, unsubscribe_link)
+        
+        return EmailPreviewResponse(
+            success=True,
+            html_content=html_content,
+            subject=f"🌤️ AQI Alert: {sample_aqi_data['city']} - {sample_aqi_data['current_aqi']} (Moderate)"
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error generating email preview: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to generate preview: {str(e)}")
+
+
+@app.get("/unsubscribe/{email}")
+async def unsubscribe_web_page(email: str):
+    """Web page for unsubscribing from email alerts"""
+    try:
+        # Update subscription status
+        result = await db.get_db().subscribers.update_one(
+            {"email": email},
+            {"$set": {"subscription_status": "cancelled", "cancelled_at": datetime.utcnow()}}
+        )
+        
+        html_content = f"""
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>Unsubscribed - CleanAirSight</title>
+            <style>
+                body {{ font-family: 'Segoe UI', Arial, sans-serif; max-width: 600px; margin: 50px auto; padding: 20px; text-align: center; }}
+                .container {{ background: white; border-radius: 12px; padding: 40px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }}
+                .success {{ color: #10b981; font-size: 48px; margin-bottom: 20px; }}
+                h1 {{ color: #1e40af; margin-bottom: 20px; }}
+                p {{ color: #6b7280; line-height: 1.6; }}
+                .button {{ display: inline-block; background: #3b82f6; color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; margin-top: 20px; }}
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <div class="success">✅</div>
+                <h1>Successfully Unsubscribed</h1>
+                <p>You have been unsubscribed from CleanAirSight AQI email alerts.</p>
+                <p>We're sorry to see you go! If you change your mind, you can always subscribe again on our website.</p>
+                <a href="http://localhost:3000" class="button">Return to CleanAirSight</a>
+            </div>
+        </body>
+        </html>
+        """
+        
+        return HTMLResponse(content=html_content)
+        
+    except Exception as e:
+        logger.error(f"Error in web unsubscribe: {e}")
+        return HTMLResponse(
+            content=f"<h1>Error</h1><p>Failed to unsubscribe: {str(e)}</p>",
+            status_code=500
+        )
 
 
 @app.get("/health")

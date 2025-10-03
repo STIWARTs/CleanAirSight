@@ -66,4 +66,20 @@ export const checkHealth = async () => {
   return response.data;
 };
 
+// Email subscription methods
+export const subscribeToAlerts = async (subscriptionData) => {
+  const response = await api.post('/api/subscribe', subscriptionData);
+  return response.data;
+};
+
+export const unsubscribeFromAlerts = async (email) => {
+  const response = await api.delete(`/api/unsubscribe/${email}`);
+  return response.data;
+};
+
+export const previewEmail = async (email) => {
+  const response = await api.get(`/api/subscribers/preview/${email}`);
+  return response.data;
+};
+
 export default api;

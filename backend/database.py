@@ -29,6 +29,11 @@ class Database:
             await cls.db.raw_ground.create_index([("timestamp", -1)])
             await cls.db.raw_weather.create_index([("timestamp", -1)])
             
+            # Email subscribers indexes
+            await cls.db.subscribers.create_index([("email", 1)], unique=True)
+            await cls.db.subscribers.create_index([("subscription_status", 1)])
+            await cls.db.subscribers.create_index([("location.city", 1)])
+            
             logger.info("Successfully connected to MongoDB")
         except Exception as e:
             logger.error(f"Failed to connect to MongoDB: {e}")

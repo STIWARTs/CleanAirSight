@@ -4,6 +4,7 @@ import Dashboard from './pages/Dashboard';
 import MapView from './pages/MapView';
 import Forecast from './pages/Forecast';
 import About from './pages/About';
+import SubscriptionPage from './pages/SubscriptionPage';
 
 function App() {
   return (
@@ -14,6 +15,7 @@ function App() {
           <Route path="/map" element={<MapView />} />
           <Route path="/forecast" element={<Forecast />} />
           <Route path="/about" element={<About />} />
+          <Route path="/subscribe" element={<SubscriptionPage />} />
         </Routes>
       </Layout>
     </Router>

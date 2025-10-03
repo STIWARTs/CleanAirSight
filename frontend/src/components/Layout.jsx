@@ -10,6 +10,7 @@ const Layout = ({ children }) => {
     { path: '/', icon: Home, label: 'Dashboard' },
     { path: '/map', icon: Map, label: 'Map' },
     { path: '/forecast', icon: TrendingUp, label: 'Forecast' },
+    { path: '/subscribe', icon: Zap, label: 'Subscribe' },
     { path: '/about', icon: Info, label: 'About' },
   ];
 

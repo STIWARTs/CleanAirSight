@@ -225,33 +225,37 @@ const MapView = () => {
       <div className="bg-white rounded-lg shadow-lg p-6">
         {/* Enhanced Search and Controls */}
         <div className="flex flex-col lg:flex-row items-center space-y-3 lg:space-y-0 lg:space-x-4">
-          {/* Search Bar with Suggestions */}
+          {/* City Dropdown Selector */}
           <div className="flex-1 relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-            <input
-              type="text"
-              placeholder="Search cities, regions, or coordinates..."
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+            <select
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm bg-white text-gray-900"
-            />
-            {searchQuery && (
-              <div className="absolute top-full left-0 right-0 bg-white border border-gray-200 rounded-lg shadow-lg mt-1 z-10">
-                {filteredLocations.slice(0, 3).map((location, idx) => (
-                  <div
-                    key={idx}
-                    className="p-3 hover:bg-gray-50 cursor-pointer border-b last:border-b-0"
-                    onClick={() => {
-                      setSelectedLocation(location);
-                      setSearchQuery('');
-                    }}
-                  >
-                    <div className="font-medium">{location.name}</div>
-                    <div className="text-sm text-gray-500">AQI {location.aqi} • {getAQILevel(location.aqi)}</div>
-                  </div>
+              onChange={(e) => {
+                setSearchQuery(e.target.value);
+                if (e.target.value) {
+                  const selectedCity = demoLocations.find(loc => loc.name === e.target.value);
+                  if (selectedCity) {
+                    setSelectedLocation(selectedCity);
+                  }
+                }
+              }}
+              className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm bg-white text-gray-900 appearance-none cursor-pointer"
+            >
+              <option value="">Select a city to view AQI data...</option>
+              {demoLocations
+                .sort((a, b) => a.name.localeCompare(b.name))
+                .map((location, idx) => (
+                  <option key={idx} value={location.name}>
+                    {location.name} - AQI {location.aqi} ({getAQILevel(location.aqi)})
+                  </option>
                 ))}
-              </div>
-            )}
+            </select>
+            {/* Custom dropdown arrow */}
+            <div className="absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none">
+              <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </div>
           </div>
 
           {/* Map Style Switcher */}
@@ -416,6 +420,10 @@ const MapView = () => {
         <MapContainer
           center={[39.8283, -98.5795]}
           zoom={4}
+          minZoom={2}
+          maxZoom={18}
+          maxBounds={[[-90, -180], [90, 180]]}
+          maxBoundsViscosity={1.0}
           style={{ height: '100%', width: '100%' }}
         >
           <TileLayer
@@ -423,6 +431,16 @@ const MapView = () => {
             url={getBasemapUrl()}
             key={basemap}
           />
+          
+          {/* Add labels overlay for satellite view */}
+          {basemap === 'satellite' && (
+            <TileLayer
+              url="https://services.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}"
+              attribution="Esri"
+              pane="overlayPane"
+              opacity={0.8}
+            />
+          )}
           
           {filteredLocations.map((location, idx) => (
             <Circle
