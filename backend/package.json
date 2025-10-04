@@ -1,0 +1,31 @@
+{
+  "name": "cleanairsight-nasa-services",
+  "version": "1.0.0",
+  "description": "NASA TEMPO and Microsoft Planetary Computer integration services for CleanAirSight",
+  "main": "services/nasaTempoService.js",
+  "scripts": {
+    "test": "node test/test-services.js",
+    "install-deps": "npm install",
+    "check-services": "node check-services.js"
+  },
+  "dependencies": {
+    "axios": "^1.6.0",
+    "dotenv": "^16.3.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.0"
+  },
+  "engines": {
+    "node": ">=16.0.0"
+  },
+  "keywords": [
+    "nasa",
+    "tempo",
+    "air-quality",
+    "satellite",
+    "planetary-computer",
+    "azure-ml"
+  ],
+  "author": "CleanAirSight Team",
+  "license": "MIT"
+}
