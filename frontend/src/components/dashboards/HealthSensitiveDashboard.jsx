@@ -24,7 +24,7 @@ const HealthSensitiveDashboard = () => {
     const fetchHealthData = async () => {
       try {
         // Fetch current AQI data
-        const aqiResponse = await fetch('/api/current-aqi');
+        const aqiResponse = await fetch('/api/current');
         const aqiData = await aqiResponse.json();
         const currentValue = aqiData.aqi || 85;
         setCurrentAQI(currentValue);
@@ -70,37 +70,80 @@ const HealthSensitiveDashboard = () => {
     return 'text-maroon-600 bg-red-200';
   };
 
-  const getHealthRecommendation = (aqi) => {
-    const threshold = getAQIThreshold();
+  const getHealthRecommendation = () => {
+    if (!healthAdvice) {
+      // Fallback recommendation when API data is not available
+      const threshold = getAQIThreshold();
+      if (currentAQI <= 50) {
+        return {
+          icon: CheckCircle,
+          color: 'text-green-600',
+          title: 'Excellent Air Quality',
+          message: 'Perfect for all outdoor activities!',
+          maskNeeded: false,
+          activities: ['Outdoor exercise', 'Walking', 'Cycling', 'Sports']
+        };
+      } else if (currentAQI <= threshold) {
+        return {
+          icon: AlertTriangle,
+          color: 'text-yellow-600',
+          title: 'Use Caution',
+          message: 'Consider limiting prolonged outdoor activities.',
+          maskNeeded: false,
+          activities: ['Light outdoor activities', 'Short walks', 'Indoor exercise preferred']
+        };
+      } else {
+        return {
+          icon: ShieldAlert,
+          color: 'text-red-600',
+          title: 'Stay Indoors',
+          message: 'Avoid outdoor activities. Use air purifiers indoors.',
+          maskNeeded: true,
+          activities: ['Indoor activities only', 'Use air purifier', 'Close windows']
+        };
+      }
+    }
     
-    if (aqi <= 50) {
+    const { activity_level, mask_needed, recommendations } = healthAdvice;
+    
+    if (activity_level === 'unrestricted') {
       return {
         icon: CheckCircle,
         color: 'text-green-600',
         title: 'Excellent Air Quality',
-        message: 'Perfect for all outdoor activities! Enjoy your time outside.',
-        maskNeeded: false,
+        message: recommendations[0] || 'Perfect for all outdoor activities!',
+        maskNeeded: mask_needed,
         activities: ['Outdoor exercise', 'Walking', 'Cycling', 'Sports']
       };
-    } else if (aqi <= threshold) {
+    } else if (activity_level === 'light_caution') {
       return {
         icon: AlertTriangle,
         color: 'text-yellow-600',
         title: 'Use Caution',
-        message: 'Consider limiting prolonged outdoor activities.',
-        maskNeeded: false,
+        message: recommendations[0] || 'Consider limiting prolonged outdoor activities.',
+        maskNeeded: mask_needed,
         activities: ['Light outdoor activities', 'Short walks', 'Indoor exercise preferred']
       };
-    } else {
+    } else if (activity_level === 'restricted') {
       return {
         icon: ShieldAlert,
         color: 'text-red-600',
         title: 'Stay Indoors',
-        message: 'Avoid outdoor activities. Use air purifiers indoors.',
-        maskNeeded: true,
-        activities: ['Indoor activities only', 'Use air purifier', 'Close windows']
+        message: recommendations[0] || 'Avoid outdoor activities. Use air purifiers indoors.',
+        maskNeeded: mask_needed,
+        activities: ['Indoor activities only', 'Close windows', 'Use air purifiers']
       };
     }
+    
+    // Default fallback
+    return {
+      icon: AlertTriangle,
+      color: 'text-yellow-600',
+      title: 'Moderate Caution',
+      message: recommendations[0] || 'Monitor air quality and adjust activities accordingly.',
+      maskNeeded: mask_needed,
+      activities: ['Monitor conditions', 'Be prepared to go indoors']
+    };
   };
 
   const recommendation = getHealthRecommendation();
