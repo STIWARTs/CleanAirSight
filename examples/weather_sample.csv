@@ -1,0 +1,11 @@
+timestamp,lat,lon,temperature,humidity,wind_speed,wind_direction,pressure,clouds,weather_condition,source
+2024-01-15T12:00:00,34.0522,-118.2437,18.5,45,3.2,270,1013,20,Clear,OpenWeatherMap
+2024-01-15T12:00:00,40.7128,-74.0060,2.3,68,5.1,180,1018,75,Clouds,OpenWeatherMap
+2024-01-15T12:00:00,41.8781,-87.6298,-4.2,72,6.8,315,1022,90,Clouds,OpenWeatherMap
+2024-01-15T12:00:00,29.7604,-95.3698,16.8,62,4.2,135,1015,40,Clear,OpenWeatherMap
+2024-01-15T12:00:00,33.4484,-112.0740,15.6,28,2.8,90,1012,10,Clear,OpenWeatherMap
+2024-01-15T13:00:00,34.0522,-118.2437,19.2,43,3.5,285,1013,15,Clear,OpenWeatherMap
+2024-01-15T13:00:00,40.7128,-74.0060,3.1,66,5.3,175,1018,70,Clouds,OpenWeatherMap
+2024-01-15T13:00:00,41.8781,-87.6298,-3.8,70,6.5,310,1022,85,Clouds,OpenWeatherMap
+2024-01-15T13:00:00,29.7604,-95.3698,17.5,60,4.5,140,1015,35,Clear,OpenWeatherMap
+2024-01-15T13:00:00,33.4484,-112.0740,16.8,26,3.1,95,1012,5,Clear,OpenWeatherMap

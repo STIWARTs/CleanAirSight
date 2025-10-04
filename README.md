@@ -1,4 +1,4 @@
-# CleanAirSight
+# CleanAirSight 🌍
 
 **Real-time Air Quality Monitoring & Forecasting using NASA TEMPO Satellite Data**
 
