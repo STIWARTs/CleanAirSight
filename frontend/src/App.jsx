@@ -1,4 +1,5 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { UserProfileProvider } from './contexts/UserProfileContext';
 import Layout from './components/Layout';
 import Dashboard from './pages/Dashboard';
 import MapView from './pages/MapView';
@@ -8,17 +9,19 @@ import SubscriptionPage from './pages/SubscriptionPage';
 
 function App() {
   return (
-    <Router>
-      <Layout>
-        <Routes>
-          <Route path="/" element={<Dashboard />} />
-          <Route path="/map" element={<MapView />} />
-          <Route path="/forecast" element={<Forecast />} />
-          <Route path="/about" element={<About />} />
-          <Route path="/subscribe" element={<SubscriptionPage />} />
-        </Routes>
-      </Layout>
-    </Router>
+    <UserProfileProvider>
+      <Router>
+        <Layout>
+          <Routes>
+            <Route path="/" element={<Dashboard />} />
+            <Route path="/map" element={<MapView />} />
+            <Route path="/forecast" element={<Forecast />} />
+            <Route path="/about" element={<About />} />
+            <Route path="/subscribe" element={<SubscriptionPage />} />
+          </Routes>
+        </Layout>
+      </Router>
+    </UserProfileProvider>
   );
 }
 

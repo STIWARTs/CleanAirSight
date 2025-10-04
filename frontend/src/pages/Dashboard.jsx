@@ -1,14 +1,19 @@
 import { useState, useEffect } from 'react';
 import { fetchCurrentAQI } from '../utils/api';
-import { Wind, AlertTriangle, CheckCircle, Activity, Satellite, MapPin, TrendingUp, Cloud, Droplets, Info } from 'lucide-react';
+import { Wind, AlertTriangle, CheckCircle, Activity, Satellite, MapPin, TrendingUp, Cloud, Droplets, Info, User, Settings } from 'lucide-react';
 import AQIAlert from '../components/AQIAlert';
 import EmailSubscription from '../components/EmailSubscription';
+import PersonalizedDashboard from '../components/PersonalizedDashboard';
+import ProfileSelector from '../components/ProfileSelector';
+import { useUserProfile } from '../contexts/UserProfileContext';
 
 const Dashboard = () => {
+  const { isProfileSelected } = useUserProfile();
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState(null);
   const [error, setError] = useState(null);
   const [alerts, setAlerts] = useState([]);
+  const [showProfileSetup, setShowProfileSetup] = useState(false);
 
   const cities = ['Los Angeles', 'New York', 'Chicago', 'Houston', 'Phoenix'];
 
@@ -47,6 +52,16 @@ const Dashboard = () => {
       setLoading(false);
     }
   };
+
+  // If user has selected a profile, show personalized dashboard
+  if (isProfileSelected) {
+    return <PersonalizedDashboard />;
+  }
+
+  // If user clicked "Set Up Profile", show profile selector
+  if (showProfileSetup) {
+    return <ProfileSelector />;
+  }
 
   const getAQIColor = (aqi) => {
     if (aqi <= 50) return 'bg-green-500';
@@ -153,6 +168,50 @@ const Dashboard = () => {
           ))}
         </div>
       )}
+
+      {/* Personalized Dashboard Call-to-Action */}
+      <div className="bg-gradient-to-r from-green-600 to-blue-600 rounded-xl p-6 shadow-lg">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-4">
+            <div className="bg-white/20 backdrop-blur-sm rounded-full p-3">
+              <User className="w-8 h-8 text-white" />
+            </div>
+            <div>
+              <h2 className="text-2xl font-bold text-white mb-1">🎯 Get Your Personalized Dashboard</h2>
+              <p className="text-green-100 text-sm">Tailored air quality insights based on your role and needs</p>
+            </div>
+          </div>
+          <button
+            onClick={() => {
+              setShowProfileSetup(true);
+            }}
+            className="bg-white text-green-600 px-6 py-3 rounded-lg font-semibold hover:bg-green-50 transition-colors flex items-center gap-2"
+          >
+            <Settings className="w-5 h-5" />
+            Set Up Profile
+          </button>
+        </div>
+        <div className="mt-4 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2 text-white text-xs">
+          <div className="bg-white/10 rounded p-2 text-center">
+            <div>🏥 Health-Sensitive</div>
+          </div>
+          <div className="bg-white/10 rounded p-2 text-center">
+            <div>🏛️ Policy Makers</div>
+          </div>
+          <div className="bg-white/10 rounded p-2 text-center">
+            <div>🚨 Emergency Response</div>
+          </div>
+          <div className="bg-white/10 rounded p-2 text-center">
+            <div>🚌 Transportation</div>
+          </div>
+          <div className="bg-white/10 rounded p-2 text-center">
+            <div>💼 Business</div>
+          </div>
+          <div className="bg-white/10 rounded p-2 text-center">
+            <div>🔬 Citizen Science</div>
+          </div>
+        </div>
+      </div>
 
       {/* Enhanced AQI Cards */}
       <div>

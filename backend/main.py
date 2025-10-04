@@ -672,6 +672,362 @@ async def unsubscribe_web_page(email: str):
         )
 
 
+# Personalized Dashboard API Endpoints
+
+@app.get("/api/personalized/hotspots")
+async def get_pollution_hotspots(
+    threshold: int = Query(100, description="AQI threshold for hotspots"),
+    limit: int = Query(10, description="Maximum number of hotspots")
+):
+    """Get pollution hotspots for policy makers"""
+    try:
+        # Get recent data above threshold
+        one_hour_ago = datetime.utcnow() - timedelta(hours=1)
+        
+        pipeline = [
+            {
+                "$match": {
+                    "timestamp": {"$gte": one_hour_ago.isoformat()}
+                }
+            },
+            {
+                "$group": {
+                    "_id": {"lat": "$lat", "lon": "$lon", "city": "$city"},
+                    "avg_value": {"$avg": "$value"},
+                    "max_value": {"$max": "$value"},
+                    "pollutant_type": {"$first": "$pollutant_type"},
+                    "latest_timestamp": {"$max": "$timestamp"}
+                }
+            },
+            {"$sort": {"max_value": -1}},
+            {"$limit": limit}
+        ]
+        
+        hotspots = []
+        cursor = db.get_db().harmonized_data.aggregate(pipeline)
+        
+        async for result in cursor:
+            aqi_info = harmonizer.calculate_aqi(
+                result.get("pollutant_type"),
+                result.get("max_value")
+            )
+            
+            if aqi_info.get("aqi", 0) >= threshold:
+                hotspots.append({
+                    "location": {
+                        "city": result["_id"].get("city"),
+                        "lat": result["_id"].get("lat"),
+                        "lon": result["_id"].get("lon")
+                    },
+                    "aqi": aqi_info.get("aqi"),
+                    "category": aqi_info.get("category"),
+                    "pollutant": result.get("pollutant_type"),
+                    "value": result.get("max_value"),
+                    "timestamp": result.get("latest_timestamp")
+                })
+        
+        return {"hotspots": hotspots, "threshold": threshold}
+        
+    except Exception as e:
+        logger.error(f"Error fetching hotspots: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/personalized/health-advice")
+async def get_health_advice(
+    aqi: int = Query(..., description="Current AQI value"),
+    user_type: str = Query("general", description="User type: sensitive, general, outdoor")
+):
+    """Get personalized health advice based on AQI and user type"""
+    try:
+        advice = {
+            "aqi": aqi,
+            "user_type": user_type,
+            "recommendations": [],
+            "mask_needed": False,
+            "activity_level": "normal"
+        }
+        
+        if user_type == "sensitive":
+            # Health-sensitive individuals (lower thresholds)
+            if aqi <= 50:
+                advice["recommendations"] = ["Excellent air quality. Perfect for all activities."]
+                advice["activity_level"] = "unrestricted"
+            elif aqi <= 75:
+                advice["recommendations"] = ["Good air quality. Consider limiting prolonged outdoor activities."]
+                advice["activity_level"] = "light_caution"
+            else:
+                advice["recommendations"] = ["Stay indoors. Use air purifiers if available.", "Avoid outdoor exercise."]
+                advice["mask_needed"] = True
+                advice["activity_level"] = "restricted"
+        else:
+            # General population
+            if aqi <= 100:
+                advice["recommendations"] = ["Air quality is acceptable for outdoor activities."]
+                advice["activity_level"] = "normal"
+            elif aqi <= 150:
+                advice["recommendations"] = ["Limit prolonged outdoor activities.", "Consider wearing a mask outdoors."]
+                advice["activity_level"] = "moderate_caution"
+                advice["mask_needed"] = True
+            else:
+                advice["recommendations"] = ["Avoid outdoor activities.", "Stay indoors with windows closed."]
+                advice["activity_level"] = "restricted"
+                advice["mask_needed"] = True
+        
+        return advice
+        
+    except Exception as e:
+        logger.error(f"Error generating health advice: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/personalized/route-quality")
+async def get_route_air_quality(
+    route_coords: str = Query(..., description="Route coordinates as lat1,lon1;lat2,lon2;...")
+):
+    """Get air quality along a transportation route"""
+    try:
+        # Parse route coordinates
+        coords = []
+        for coord_pair in route_coords.split(';'):
+            lat, lon = map(float, coord_pair.split(','))
+            coords.append({"lat": lat, "lon": lon})
+        
+        route_quality = []
+        
+        for point in coords:
+            # Find nearby air quality data (within 5km)
+            query = {
+                "lat": {"$gte": point["lat"] - 0.05, "$lte": point["lat"] + 0.05},
+                "lon": {"$gte": point["lon"] - 0.05, "$lte": point["lon"] + 0.05},
+                "timestamp": {"$gte": (datetime.utcnow() - timedelta(hours=2)).isoformat()}
+            }
+            
+            cursor = db.get_db().harmonized_data.find(query).sort("timestamp", -1).limit(5)
+            results = await cursor.to_list(length=5)
+            
+            if results:
+                # Calculate average AQI for this point
+                total_aqi = 0
+                count = 0
+                
+                for result in results:
+                    aqi_info = harmonizer.calculate_aqi(
+                        result.get("pollutant_type"),
+                        result.get("value")
+                    )
+                    total_aqi += aqi_info.get("aqi", 0)
+                    count += 1
+                
+                avg_aqi = total_aqi / count if count > 0 else 0
+                
+                route_quality.append({
+                    "coordinates": point,
+                    "aqi": round(avg_aqi),
+                    "data_points": count,
+                    "status": "good" if avg_aqi <= 100 else "caution" if avg_aqi <= 150 else "poor"
+                })
+            else:
+                route_quality.append({
+                    "coordinates": point,
+                    "aqi": None,
+                    "data_points": 0,
+                    "status": "no_data"
+                })
+        
+        # Calculate overall route assessment
+        valid_points = [p for p in route_quality if p["aqi"] is not None]
+        if valid_points:
+            avg_route_aqi = sum(p["aqi"] for p in valid_points) / len(valid_points)
+            max_route_aqi = max(p["aqi"] for p in valid_points)
+        else:
+            avg_route_aqi = None
+            max_route_aqi = None
+        
+        return {
+            "route_points": route_quality,
+            "summary": {
+                "average_aqi": round(avg_route_aqi) if avg_route_aqi else None,
+                "maximum_aqi": max_route_aqi,
+                "total_points": len(coords),
+                "data_coverage": len(valid_points) / len(coords) * 100 if coords else 0,
+                "recommendation": "proceed" if max_route_aqi and max_route_aqi <= 100 else "caution" if max_route_aqi and max_route_aqi <= 150 else "avoid"
+            }
+        }
+        
+    except Exception as e:
+        logger.error(f"Error analyzing route air quality: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/personalized/city-leaderboard")
+async def get_city_leaderboard(limit: int = Query(10, description="Number of cities to return")):
+    """Get leaderboard of cities with best air quality for citizen science"""
+    try:
+        # Get recent data for major cities
+        one_day_ago = datetime.utcnow() - timedelta(days=1)
+        
+        pipeline = [
+            {
+                "$match": {
+                    "timestamp": {"$gte": one_day_ago.isoformat()},
+                    "city": {"$exists": True, "$ne": None}
+                }
+            },
+            {
+                "$group": {
+                    "_id": "$city",
+                    "avg_value": {"$avg": "$value"},
+                    "data_points": {"$sum": 1},
+                    "pollutant_type": {"$first": "$pollutant_type"}
+                }
+            },
+            {"$match": {"data_points": {"$gte": 5}}},  # Cities with sufficient data
+            {"$sort": {"avg_value": 1}},  # Sort by best air quality (lowest values)
+            {"$limit": limit}
+        ]
+        
+        leaderboard = []
+        cursor = db.get_db().harmonized_data.aggregate(pipeline)
+        
+        rank = 1
+        async for result in cursor:
+            aqi_info = harmonizer.calculate_aqi(
+                result.get("pollutant_type"),
+                result.get("avg_value")
+            )
+            
+            # Calculate trend (simplified - would need time series analysis)
+            trend = "stable"  # In real implementation, compare with previous period
+            
+            leaderboard.append({
+                "rank": rank,
+                "city": result["_id"],
+                "aqi": round(aqi_info.get("aqi", 0)),
+                "category": aqi_info.get("category"),
+                "trend": trend,
+                "data_points": result.get("data_points"),
+                "score": max(0, 100 - aqi_info.get("aqi", 0))  # Score out of 100
+            })
+            rank += 1
+        
+        return {"leaderboard": leaderboard, "generated_at": datetime.utcnow().isoformat()}
+        
+    except Exception as e:
+        logger.error(f"Error generating city leaderboard: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/api/personalized/citizen-report")
+async def submit_citizen_report(
+    report_type: str = Query(..., description="Report type: smoke, dust, chemical_smell, etc."),
+    location: str = Query(..., description="Location description"),
+    lat: float = Query(..., description="Latitude"),
+    lon: float = Query(..., description="Longitude"),
+    description: str = Query(..., description="Description of observation"),
+    severity: str = Query("low", description="Severity: low, moderate, high")
+):
+    """Submit citizen science pollution report"""
+    try:
+        # Store citizen report
+        report = {
+            "type": report_type,
+            "location": {
+                "description": location,
+                "lat": lat,
+                "lon": lon
+            },
+            "description": description,
+            "severity": severity,
+            "timestamp": datetime.utcnow().isoformat(),
+            "status": "pending",
+            "votes": 0,
+            "verified": False
+        }
+        
+        result = await db.get_db().citizen_reports.insert_one(report)
+        
+        return {
+            "success": True,
+            "report_id": str(result.inserted_id),
+            "message": "Report submitted successfully. Thank you for contributing to cleaner air!"
+        }
+        
+    except Exception as e:
+        logger.error(f"Error submitting citizen report: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/personalized/business-impact")
+async def get_business_impact_analysis(
+    business_lat: float = Query(..., description="Business location latitude"),
+    business_lon: float = Query(..., description="Business location longitude"),
+    days: int = Query(30, description="Analysis period in days")
+):
+    """Get business impact analysis for economic stakeholders"""
+    try:
+        # Get historical data for location
+        start_date = datetime.utcnow() - timedelta(days=days)
+        
+        query = {
+            "lat": {"$gte": business_lat - 0.01, "$lte": business_lat + 0.01},
+            "lon": {"$gte": business_lon - 0.01, "$lte": business_lon + 0.01},
+            "timestamp": {"$gte": start_date.isoformat()}
+        }
+        
+        cursor = db.get_db().harmonized_data.find(query).sort("timestamp", 1)
+        results = await cursor.to_list(length=10000)
+        
+        # Calculate business impact metrics
+        high_aqi_days = 0
+        total_days = days
+        estimated_costs = 0
+        
+        daily_aqi = {}
+        for result in results:
+            date = result.get("timestamp", "")[:10]  # Get date part
+            aqi_info = harmonizer.calculate_aqi(
+                result.get("pollutant_type"),
+                result.get("value")
+            )
+            aqi_value = aqi_info.get("aqi", 0)
+            
+            if date not in daily_aqi:
+                daily_aqi[date] = []
+            daily_aqi[date].append(aqi_value)
+        
+        # Calculate impact
+        for date, aqi_values in daily_aqi.items():
+            max_aqi = max(aqi_values)
+            if max_aqi > 150:  # Unhealthy levels
+                high_aqi_days += 1
+                estimated_costs += 1000  # $1000 per high AQI day (simplified)
+            elif max_aqi > 100:  # Moderate levels
+                estimated_costs += 500   # $500 per moderate AQI day
+        
+        risk_score = min(100, (high_aqi_days / total_days) * 100 + (estimated_costs / 1000))
+        
+        return {
+            "analysis_period": f"{days} days",
+            "location": {"lat": business_lat, "lon": business_lon},
+            "metrics": {
+                "high_aqi_days": high_aqi_days,
+                "estimated_cost_impact": estimated_costs,
+                "risk_score": round(risk_score, 1),
+                "data_points": len(results)
+            },
+            "recommendations": [
+                "Install air filtration systems" if risk_score > 70 else "Monitor air quality trends",
+                "Consider flexible work policies during high AQI days" if high_aqi_days > 5 else "Current air quality impact is manageable",
+                "Review insurance coverage for air quality-related claims" if estimated_costs > 5000 else "Standard coverage appears adequate"
+            ]
+        }
+        
+    except Exception as e:
+        logger.error(f"Error analyzing business impact: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @app.get("/health")
 async def health_check():
     """Health check endpoint"""

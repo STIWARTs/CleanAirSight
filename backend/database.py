@@ -34,6 +34,12 @@ class Database:
             await cls.db.subscribers.create_index([("subscription_status", 1)])
             await cls.db.subscribers.create_index([("location.city", 1)])
             
+            # Citizen reports indexes
+            await cls.db.citizen_reports.create_index([("timestamp", -1)])
+            await cls.db.citizen_reports.create_index([("location", "2dsphere")])
+            await cls.db.citizen_reports.create_index([("type", 1)])
+            await cls.db.citizen_reports.create_index([("status", 1)])
+            
             logger.info("Successfully connected to MongoDB")
         except Exception as e:
             logger.error(f"Failed to connect to MongoDB: {e}")
