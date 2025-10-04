@@ -1,15 +1,31 @@
 import React, { useState } from 'react';
 import { useUserProfile } from '../contexts/UserProfileContext';
-import { CheckCircle, ArrowRight, Users, Building, AlertTriangle, Bus, Briefcase, FlaskConical } from 'lucide-react';
+import { CheckCircle, ArrowRight, Users, Building, AlertTriangle, Bus, Briefcase, FlaskConical, X } from 'lucide-react';
 
-const ProfileSelector = () => {
+const ProfileSelector = ({ onClose, forceShow = false }) => {
   const { USER_PROFILES, selectProfile, isProfileSelected } = useUserProfile();
   const [selectedProfile, setSelectedProfile] = useState(null);
   const [showPreferences, setShowPreferences] = useState(false);
   const [preferences, setPreferences] = useState({});
+  const [isDismissed, setIsDismissed] = useState(false);
 
-  if (isProfileSelected) {
-    return null; // Don't show if profile already selected
+  // Check if user has dismissed the modal in this session
+  const [sessionDismissed, setSessionDismissed] = useState(() => {
+    return sessionStorage.getItem('profile_selector_dismissed') === 'true';
+  });
+
+  // If already selected a profile, don't show (unless forced)
+  if (isProfileSelected && !forceShow) {
+    return null;
+  }
+
+  // If dismissed and not forced to show, don't show
+  if (sessionDismissed && !forceShow) {
+    // If we have an onClose callback and this is a session dismissal, call it
+    if (onClose) {
+      onClose();
+    }
+    return null;
   }
 
   const getProfileIcon = (profileId) => {
@@ -36,13 +52,33 @@ const ProfileSelector = () => {
     }
   };
 
+  const handleClose = () => {
+    // Just dismiss the modal for this session without selecting a profile
+    setSessionDismissed(true);
+    sessionStorage.setItem('profile_selector_dismissed', 'true');
+    
+    // Call onClose callback if provided (from Dashboard)
+    if (onClose) {
+      onClose();
+    }
+  };
+
   const updatePreference = (key, value) => {
     setPreferences(prev => ({ ...prev, [key]: value }));
   };
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-xl shadow-2xl max-w-6xl w-full max-h-[90vh] overflow-y-auto">
+      <div className="bg-white rounded-xl shadow-2xl max-w-6xl w-full max-h-[90vh] overflow-y-auto relative">
+        {/* Close Button */}
+        <button
+          onClick={handleClose}
+          className="absolute top-4 right-4 w-8 h-8 bg-gray-100 hover:bg-gray-200 rounded-full flex items-center justify-center transition-colors duration-200 z-10"
+          title="Skip profile selection"
+        >
+          <X className="w-4 h-4 text-gray-600" />
+        </button>
+        
         {!showPreferences ? (
           <div className="p-8">
             <div className="text-center mb-8">
@@ -51,6 +87,9 @@ const ProfileSelector = () => {
               </h2>
               <p className="text-lg text-gray-600 mb-6">
                 Choose your profile to get a personalized dashboard experience tailored to your needs
+              </p>
+              <p className="text-sm text-gray-500">
+                You can skip this step and use default settings, or select a profile for a personalized experience
               </p>
             </div>
 
@@ -99,7 +138,7 @@ const ProfileSelector = () => {
             </div>
 
             {selectedProfile && (
-              <div className="mt-8 text-center">
+              <div className="mt-8 text-center space-y-4">
                 <button
                   onClick={() => setShowPreferences(true)}
                   className="bg-blue-600 text-white px-8 py-3 rounded-lg font-semibold hover:bg-blue-700 transition-colors duration-200 flex items-center gap-2 mx-auto"
@@ -107,11 +146,31 @@ const ProfileSelector = () => {
                   Continue with {USER_PROFILES[selectedProfile].name}
                   <ArrowRight className="w-5 h-5" />
                 </button>
+                <div>
+                  <button
+                    onClick={handleClose}
+                    className="text-gray-500 hover:text-gray-700 text-sm underline transition-colors duration-200"
+                  >
+                    Or skip and use default settings
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {!selectedProfile && (
+              <div className="mt-8 text-center">
+                <button
+                  onClick={handleClose}
+                  className="text-gray-500 hover:text-gray-700 text-sm underline transition-colors duration-200"
+                >
+                  Skip profile selection and use default settings
+                </button>
               </div>
             )}
           </div>
         ) : (
           <div className="p-8">
+            {/* Close Button also available on preferences page */}
             <div className="text-center mb-8">
               <div className={`w-20 h-20 rounded-full ${USER_PROFILES[selectedProfile].color} flex items-center justify-center mx-auto mb-4`}>
                 {React.createElement(getProfileIcon(selectedProfile), { className: "w-10 h-10 text-white" })}

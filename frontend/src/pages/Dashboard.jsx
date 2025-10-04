@@ -60,7 +60,7 @@ const Dashboard = () => {
 
   // If user clicked "Set Up Profile", show profile selector
   if (showProfileSetup) {
-    return <ProfileSelector />;
+    return <ProfileSelector onClose={() => setShowProfileSetup(false)} forceShow={true} />;
   }
 
   const getAQIColor = (aqi) => {
@@ -183,6 +183,8 @@ const Dashboard = () => {
           </div>
           <button
             onClick={() => {
+              // Clear any previous dismissal when user explicitly wants to set up profile
+              sessionStorage.removeItem('profile_selector_dismissed');
               setShowProfileSetup(true);
             }}
             className="bg-white text-green-600 px-6 py-3 rounded-lg font-semibold hover:bg-green-50 transition-colors flex items-center gap-2"
