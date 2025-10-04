@@ -40,23 +40,65 @@ const PolicyMakerDashboard = () => {
           }));
           setHotspots(formattedHotspots);
         } else {
-          // Fallback to mock data if no real hotspots
-          setHotspots([
+          // City-specific fallback data
+          const cityHotspots = {
+            'Los Angeles': [
+              { name: 'Downtown LA', aqi: 145, trend: 'up', lat: 34.0522, lon: -118.2437 },
+              { name: 'Industrial District', aqi: 132, trend: 'stable', lat: 34.0224, lon: -118.2851 },
+              { name: 'Port Area', aqi: 158, trend: 'up', lat: 33.7361, lon: -118.2922 },
+              { name: 'Airport Zone', aqi: 128, trend: 'down', lat: 33.9425, lon: -118.4081 },
+            ],
+            'Chicago': [
+              { name: 'Downtown Chicago', aqi: 135, trend: 'up', lat: 41.8781, lon: -87.6298 },
+              { name: 'South Side', aqi: 142, trend: 'stable', lat: 41.8000, lon: -87.6000 },
+              { name: 'Industrial Corridor', aqi: 156, trend: 'up', lat: 41.8500, lon: -87.7000 },
+              { name: 'O\'Hare Area', aqi: 125, trend: 'down', lat: 41.9742, lon: -87.9073 },
+            ],
+            'New York': [
+              { name: 'Manhattan', aqi: 125, trend: 'stable', lat: 40.7831, lon: -73.9712 },
+              { name: 'Brooklyn', aqi: 118, trend: 'down', lat: 40.6782, lon: -73.9442 },
+              { name: 'Queens', aqi: 132, trend: 'up', lat: 40.7282, lon: -73.7949 },
+              { name: 'Bronx', aqi: 140, trend: 'up', lat: 40.8448, lon: -73.8648 },
+            ],
+            'Houston': [
+              { name: 'Downtown Houston', aqi: 148, trend: 'up', lat: 29.7604, lon: -95.3698 },
+              { name: 'Ship Channel', aqi: 165, trend: 'stable', lat: 29.7355, lon: -95.2521 },
+              { name: 'Energy Corridor', aqi: 138, trend: 'down', lat: 29.7355, lon: -95.6890 },
+              { name: 'Medical Center', aqi: 122, trend: 'stable', lat: 29.7058, lon: -95.3969 },
+            ]
+          };
+          setHotspots(cityHotspots[selectedCity] || cityHotspots['Los Angeles']);
+        }
+      } catch (error) {
+        console.error('Error fetching policy data:', error);
+        // City-specific fallback data
+        const cityHotspots = {
+          'Los Angeles': [
             { name: 'Downtown LA', aqi: 145, trend: 'up', lat: 34.0522, lon: -118.2437 },
             { name: 'Industrial District', aqi: 132, trend: 'stable', lat: 34.0224, lon: -118.2851 },
             { name: 'Port Area', aqi: 158, trend: 'up', lat: 33.7361, lon: -118.2922 },
             { name: 'Airport Zone', aqi: 128, trend: 'down', lat: 33.9425, lon: -118.4081 },
-          ]);
-        }
-      } catch (error) {
-        console.error('Error fetching policy data:', error);
-        // Fallback to mock data
-        setHotspots([
-          { name: 'Downtown LA', aqi: 145, trend: 'up', lat: 34.0522, lon: -118.2437 },
-          { name: 'Industrial District', aqi: 132, trend: 'stable', lat: 34.0224, lon: -118.2851 },
-          { name: 'Port Area', aqi: 158, trend: 'up', lat: 33.7361, lon: -118.2922 },
-          { name: 'Airport Zone', aqi: 128, trend: 'down', lat: 33.9425, lon: -118.4081 },
-        ]);
+          ],
+          'Chicago': [
+            { name: 'Downtown Chicago', aqi: 135, trend: 'up', lat: 41.8781, lon: -87.6298 },
+            { name: 'South Side', aqi: 142, trend: 'stable', lat: 41.8000, lon: -87.6000 },
+            { name: 'Industrial Corridor', aqi: 156, trend: 'up', lat: 41.8500, lon: -87.7000 },
+            { name: 'O\'Hare Area', aqi: 125, trend: 'down', lat: 41.9742, lon: -87.9073 },
+          ],
+          'New York': [
+            { name: 'Manhattan', aqi: 125, trend: 'stable', lat: 40.7831, lon: -73.9712 },
+            { name: 'Brooklyn', aqi: 118, trend: 'down', lat: 40.6782, lon: -73.9442 },
+            { name: 'Queens', aqi: 132, trend: 'up', lat: 40.7282, lon: -73.7949 },
+            { name: 'Bronx', aqi: 140, trend: 'up', lat: 40.8448, lon: -73.8648 },
+          ],
+          'Houston': [
+            { name: 'Downtown Houston', aqi: 148, trend: 'up', lat: 29.7604, lon: -95.3698 },
+            { name: 'Ship Channel', aqi: 165, trend: 'stable', lat: 29.7355, lon: -95.2521 },
+            { name: 'Energy Corridor', aqi: 138, trend: 'down', lat: 29.7355, lon: -95.6890 },
+            { name: 'Medical Center', aqi: 122, trend: 'stable', lat: 29.7058, lon: -95.3969 },
+          ]
+        };
+        setHotspots(cityHotspots[selectedCity] || cityHotspots['Los Angeles']);
       } finally {
         setLoading(false);
       }
@@ -146,19 +188,32 @@ const PolicyMakerDashboard = () => {
 
   return (
     <div className="space-y-6">
+      {/* Profile Header */}
+      <div className="bg-white rounded-xl shadow-lg p-6">
+        <div className="flex items-center gap-4">
+          <div className="w-12 h-12 bg-blue-600 rounded-full flex items-center justify-center text-white font-bold text-lg">
+            PM
+          </div>
+          <div>
+            <h1 className="text-xl font-bold text-gray-800">Policy Maker & Municipal Authority</h1>
+            <p className="text-gray-600">Government officials, municipal leaders, transportation authorities</p>
+          </div>
+        </div>
+      </div>
+
       {/* Control Panel */}
       <div className="bg-white rounded-xl shadow-lg p-6">
-        <div className="flex flex-wrap items-center justify-between gap-4">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
           <div className="flex items-center gap-4">
             <Building className="w-6 h-6 text-blue-600" />
             <h2 className="text-xl font-semibold text-gray-800">Policy Dashboard</h2>
           </div>
           
-          <div className="flex items-center gap-4">
+          <div className="flex flex-wrap items-center gap-3">
             <select 
               value={selectedCity} 
               onChange={(e) => setSelectedCity(e.target.value)}
-              className="border border-gray-300 rounded-lg px-3 py-2 text-sm"
+              className="bg-gray-800 text-white border border-gray-600 rounded-lg px-4 py-2 text-sm font-medium hover:bg-gray-700 transition-colors"
             >
               <option value="Los Angeles">Los Angeles</option>
               <option value="New York">New York</option>
@@ -169,7 +224,7 @@ const PolicyMakerDashboard = () => {
             <select 
               value={timeRange} 
               onChange={(e) => setTimeRange(e.target.value)}
-              className="border border-gray-300 rounded-lg px-3 py-2 text-sm"
+              className="bg-gray-800 text-white border border-gray-600 rounded-lg px-4 py-2 text-sm font-medium hover:bg-gray-700 transition-colors"
             >
               <option value="7days">Last 7 Days</option>
               <option value="30days">Last 30 Days</option>
@@ -270,7 +325,7 @@ const PolicyMakerDashboard = () => {
             zoom={10}
           />
           {hotspots.length === 0 && (
-            <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center rounded-lg">
+            <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center rounded-lg z-20">
               <div className="text-white text-center">
                 <p className="text-lg font-medium">Loading hotspot data...</p>
                 <p className="text-sm">Real-time pollution monitoring</p>
@@ -278,9 +333,16 @@ const PolicyMakerDashboard = () => {
             </div>
           )}
         </div>
-        <div className="mt-4 text-sm text-gray-600">
-          <p>🛰️ <strong>Data Sources:</strong> NASA TEMPO Satellite + Ground Monitoring Stations</p>
-          <p>🔄 <strong>Updates:</strong> Real-time every 10 minutes | <strong>Coverage:</strong> City-wide heatmap overlays</p>
+        <div className="mt-4 flex flex-wrap gap-4 text-sm text-gray-600">
+          <p className="flex items-center gap-1">
+            🛰️ <strong>Data Sources:</strong> NASA TEMPO Satellite + Ground Monitoring Stations
+          </p>
+          <p className="flex items-center gap-1">
+            🔄 <strong>Updates:</strong> Real-time every 10 minutes
+          </p>
+          <p className="flex items-center gap-1">
+            🌍 <strong>Coverage:</strong> City-wide heatmap overlays
+          </p>
         </div>
       </div>
 

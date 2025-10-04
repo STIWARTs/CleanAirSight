@@ -28,13 +28,14 @@ const AQIMap = ({ hotspots = [], center = [34.0522, -118.2437], zoom = 10 }) => 
   };
 
   return (
-    <div className="h-96 w-full rounded-lg overflow-hidden border">
-      <MapContainer
-        center={center}
-        zoom={zoom}
-        style={{ height: '100%', width: '100%' }}
-        className="rounded-lg"
-      >
+    <div className="w-full">
+      <div className="h-96 w-full rounded-lg overflow-hidden border relative">
+        <MapContainer
+          center={center}
+          zoom={zoom}
+          style={{ height: '100%', width: '100%' }}
+          className="rounded-lg"
+        >
         {/* OpenStreetMap tiles - completely free, no API key needed */}
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
@@ -48,10 +49,10 @@ const AQIMap = ({ hotspots = [], center = [34.0522, -118.2437], zoom = 10 }) => 
             center={[hotspot.lat, hotspot.lon]}
             radius={getAQIRadius(hotspot.aqi)}
             pathOptions={{
-              color: getAQIColor(hotspot.aqi),
+              color: '#ffffff',
               fillColor: getAQIColor(hotspot.aqi),
-              fillOpacity: 0.6,
-              weight: 2
+              fillOpacity: 0.8,
+              weight: 3
             }}
           >
             <Popup>
@@ -72,45 +73,36 @@ const AQIMap = ({ hotspots = [], center = [34.0522, -118.2437], zoom = 10 }) => 
           </CircleMarker>
         ))}
 
-        {/* Regular markers for reference points */}
-        {hotspots.slice(0, 3).map((hotspot, index) => (
-          <Marker key={`marker-${index}`} position={[hotspot.lat, hotspot.lon]}>
-            <Popup>
-              <div className="text-sm">
-                <h3 className="font-bold">{hotspot.name}</h3>
-                <p>AQI: {hotspot.aqi}</p>
-              </div>
-            </Popup>
-          </Marker>
-        ))}
+
       </MapContainer>
       
-      {/* Map Legend */}
-      <div className="absolute bottom-4 left-4 bg-white p-3 rounded-lg shadow-md text-xs">
-        <h4 className="font-semibold mb-2">AQI Levels</h4>
-        <div className="space-y-1">
-          <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded-full bg-green-500"></div>
-            <span>Good (0-50)</span>
+      {/* Map Legend - positioned as overlay with better visibility */}
+      <div className="absolute bottom-4 left-4 bg-white p-3 rounded-lg shadow-lg border border-gray-300 text-xs z-[1000]">
+        <h4 className="font-bold mb-3 text-gray-800 text-sm">AQI Levels</h4>
+        <div className="space-y-2">
+          <div className="flex items-center gap-3">
+            <div className="w-4 h-4 rounded-full bg-green-500 border border-green-600"></div>
+            <span className="text-gray-800 font-medium">Good (0-50)</span>
           </div>
-          <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
-            <span>Moderate (51-100)</span>
+          <div className="flex items-center gap-3">
+            <div className="w-4 h-4 rounded-full bg-yellow-500 border border-yellow-600"></div>
+            <span className="text-gray-800 font-medium">Moderate (51-100)</span>
           </div>
-          <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded-full bg-orange-500"></div>
-            <span>Unhealthy for Sensitive (101-150)</span>
+          <div className="flex items-center gap-3">
+            <div className="w-4 h-4 rounded-full bg-orange-500 border border-orange-600"></div>
+            <span className="text-gray-800 font-medium">Unhealthy for Sensitive (101-150)</span>
           </div>
-          <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded-full bg-red-500"></div>
-            <span>Unhealthy (151-200)</span>
+          <div className="flex items-center gap-3">
+            <div className="w-4 h-4 rounded-full bg-red-500 border border-red-600"></div>
+            <span className="text-gray-800 font-medium">Unhealthy (151-200)</span>
           </div>
-          <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded-full bg-purple-500"></div>
-            <span>Very Unhealthy (201-300)</span>
+          <div className="flex items-center gap-3">
+            <div className="w-4 h-4 rounded-full bg-purple-500 border border-purple-600"></div>
+            <span className="text-gray-800 font-medium">Very Unhealthy (201-300)</span>
           </div>
         </div>
       </div>
+    </div>
     </div>
   );
 };
