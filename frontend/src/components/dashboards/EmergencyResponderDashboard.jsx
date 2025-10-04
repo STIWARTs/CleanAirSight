@@ -321,21 +321,21 @@ const EmergencyResponderDashboard = () => {
           <div>
             <h3 className="font-semibold text-gray-800 mb-3">Quick Contacts</h3>
             <div className="space-y-2">
-              <div className="flex items-center justify-between p-2 bg-gray-50 rounded">
-                <span className="text-sm">Fire Department</span>
-                <button className="text-blue-600 hover:text-blue-800">
+              <div className="flex items-center justify-between p-3 bg-white border border-gray-200 rounded-lg shadow-sm">
+                <span className="text-sm font-medium text-gray-800">Fire Department</span>
+                <button className="text-blue-600 hover:text-blue-800 p-1">
                   <Phone className="w-4 h-4" />
                 </button>
               </div>
-              <div className="flex items-center justify-between p-2 bg-gray-50 rounded">
-                <span className="text-sm">Air Quality Control</span>
-                <button className="text-blue-600 hover:text-blue-800">
+              <div className="flex items-center justify-between p-3 bg-white border border-gray-200 rounded-lg shadow-sm">
+                <span className="text-sm font-medium text-gray-800">Air Quality Control</span>
+                <button className="text-blue-600 hover:text-blue-800 p-1">
                   <Phone className="w-4 h-4" />
                 </button>
               </div>
-              <div className="flex items-center justify-between p-2 bg-gray-50 rounded">
-                <span className="text-sm">Public Health</span>
-                <button className="text-blue-600 hover:text-blue-800">
+              <div className="flex items-center justify-between p-3 bg-white border border-gray-200 rounded-lg shadow-sm">
+                <span className="text-sm font-medium text-gray-800">Public Health</span>
+                <button className="text-blue-600 hover:text-blue-800 p-1">
                   <Phone className="w-4 h-4" />
                 </button>
               </div>
@@ -344,13 +344,13 @@ const EmergencyResponderDashboard = () => {
           
           <div>
             <h3 className="font-semibold text-gray-800 mb-3">Send Alert</h3>
-            <div className="space-y-3">
+            <div className="space-y-3 p-4 bg-white border border-gray-200 rounded-lg shadow-sm">
               <textarea 
                 placeholder="Type emergency message..."
-                className="w-full p-3 border border-gray-300 rounded-lg text-sm"
+                className="w-full p-3 border border-gray-300 rounded-lg text-sm bg-white text-gray-800 focus:ring-2 focus:ring-red-500 focus:border-red-500"
                 rows="4"
               />
-              <button className="w-full bg-red-600 text-white py-2 rounded-lg hover:bg-red-700 transition-colors flex items-center justify-center gap-2">
+              <button className="w-full bg-red-600 text-white py-2 rounded-lg hover:bg-red-700 transition-colors flex items-center justify-center gap-2 font-medium">
                 <Send className="w-4 h-4" />
                 Send Emergency Alert
               </button>
