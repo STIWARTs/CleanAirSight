@@ -6,6 +6,7 @@ from datetime import datetime, timedelta
 import logging
 from contextlib import asynccontextmanager
 import asyncio
+import os
 
 from config import settings
 from database import db
@@ -1027,18 +1028,195 @@ async def get_business_impact_analysis(
         logger.error(f"Error analyzing business impact: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
+# NASA Enhanced Endpoints
+@app.get("/api/nasa/air-quality")
+async def get_nasa_air_quality(
+    lat: float = Query(..., ge=-90, le=90, description="Latitude"),
+    lon: float = Query(..., ge=-180, le=180, description="Longitude"),
+    include_forecast: bool = Query(False, description="Include 24-hour forecast"),
+    include_context: bool = Query(True, description="Include environmental context")
+):
+    """
+    🛰️ Get enhanced air quality data from NASA TEMPO satellite with AI analysis
+    
+    This endpoint provides:
+    - Real NASA TEMPO satellite data (when API keys configured)
+    - Environmental context from Microsoft Planetary Computer
+    - AI-powered forecasts from Azure ML
+    - Enhanced weather impact analysis
+    """
+    try:
+        from nasa_integration import nasa_services
+        
+        logger.info(f"🛰️ NASA air quality request for {lat}, {lon}")
+        
+        # Get NASA TEMPO air quality data
+        air_quality_data = await nasa_services.get_nasa_air_quality(lat, lon)
+        
+        # Get environmental context if requested
+        environmental_context = None
+        if include_context:
+            environmental_context = await nasa_services.get_environmental_context(lat, lon)
+        
+        # Get weather data with air quality impact
+        weather_data = await nasa_services.get_weather_for_air_quality(lat, lon)
+        
+        # Get forecast if requested
+        forecast_data = None
+        if include_forecast:
+            forecast_data = await nasa_services.get_ml_forecast(
+                air_quality_data, 
+                environmental_context or {}, 
+                24
+            )
+        
+        # Compile comprehensive response
+        response = {
+            "success": True,
+            "timestamp": datetime.utcnow().isoformat(),
+            "location": {"lat": lat, "lon": lon},
+            "airQuality": air_quality_data,
+            "weather": weather_data,
+            "environmentalContext": environmental_context,
+            "forecast": forecast_data,
+            "dataSource": "NASA TEMPO + Microsoft Planetary Computer + Azure ML",
+            "confidence": "HIGH" if air_quality_data.get("source") == "NASA_TEMPO_SATELLITE" else "ENHANCED_SIMULATION",
+            "recommendations": _generate_comprehensive_recommendations(
+                air_quality_data, weather_data, environmental_context
+            ),
+            "metadata": {
+                "api_version": "3.0.0",
+                "integration_type": "nasa_enhanced", 
+                "update_frequency": "10 minutes",
+                "coverage": "Global with North America priority"
+            }
+        }
+        
+        logger.info(f"✅ NASA air quality data delivered for {lat}, {lon}")
+        return response
+        
+    except Exception as e:
+        logger.error(f"❌ NASA air quality error: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to fetch NASA air quality data: {str(e)}")
+
+@app.get("/api/nasa/services-status")
+async def get_nasa_services_status():
+    """
+    🔧 Get status of all NASA integration services
+    
+    Shows which services are configured and operational
+    """
+    try:
+        from nasa_integration import nasa_services
+        
+        status = nasa_services.get_services_status()
+        
+        # Add configuration status
+        config_status = {
+            "nasa_tempo_api": bool(os.getenv("NASA_TEMPO_API_KEY")),
+            "nasa_earthdata": bool(os.getenv("NASA_EARTHDATA_USERNAME")),
+            "azure_subscription": bool(os.getenv("AZURE_SUBSCRIPTION_ID")),
+            "planetary_computer": bool(os.getenv("PLANETARY_COMPUTER_KEY")),
+            "meteomatics": bool(os.getenv("METEOMATICS_USERNAME")),
+            "openweather": bool(os.getenv("OPENWEATHER_API_KEY"))
+        }
+        
+        response = {
+            "success": True,
+            "timestamp": datetime.utcnow().isoformat(),
+            "services": status,
+            "configuration": config_status,
+            "overall_status": "OPERATIONAL" if status["integration_available"] else "FALLBACK_MODE",
+            "recommendations": _generate_setup_recommendations(config_status),
+            "next_steps": [
+                "Configure missing API keys in .env file",
+                "Restart service to activate real NASA data",
+                "Monitor data quality and service performance"
+            ]
+        }
+        
+        return response
+        
+    except Exception as e:
+        logger.error(f"❌ NASA services status error: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to check NASA services status: {str(e)}")
+
+def _generate_comprehensive_recommendations(air_quality_data, weather_data, environmental_context):
+    """Generate comprehensive recommendations based on all data sources"""
+    recommendations = []
+    
+    aqi = air_quality_data.get("aqi", 50)
+    
+    # Air quality recommendations
+    if aqi > 150:
+        recommendations.append({
+            "type": "health_alert",
+            "priority": "high",
+            "message": "Unhealthy air quality detected",
+            "action": "Avoid outdoor activities, keep windows closed, use air purifiers"
+        })
+    elif aqi > 100:
+        recommendations.append({
+            "type": "sensitive_groups",
+            "priority": "medium", 
+            "message": "Air quality may affect sensitive individuals",
+            "action": "Limit prolonged outdoor activities for sensitive groups"
+        })
+    
+    # Weather-based recommendations
+    if weather_data and weather_data.get("airQualityImpact"):
+        impact = weather_data["airQualityImpact"]
+        if impact.get("overallImpact") == "adverse":
+            recommendations.append({
+                "type": "weather_impact",
+                "priority": "medium",
+                "message": "Weather conditions may worsen air quality",
+                "action": "Monitor conditions closely, expect pollution accumulation"
+            })
+    
+    return recommendations
+
+def _generate_setup_recommendations(config_status):
+    """Generate setup recommendations based on configuration"""
+    recommendations = []
+    
+    if not config_status.get("nasa_tempo_api"):
+        recommendations.append("Configure NASA_TEMPO_API_KEY for real satellite data")
+    
+    if not config_status.get("azure_subscription"):
+        recommendations.append("Set up Azure subscription for ML forecasting ($200 free credit available)")
+    
+    if not config_status.get("planetary_computer"):
+        recommendations.append("Register for Microsoft Planetary Computer (free) for environmental data")
+    
+    if not config_status.get("meteomatics"):
+        recommendations.append("Consider Meteomatics API for premium weather data")
+    
+    return recommendations
 
 @app.get("/health")
 async def health_check():
-    """Health check endpoint"""
+    """Health check endpoint with NASA integration status"""
     try:
         # Check database connection
         await db.get_db().command("ping")
         
+        # Check NASA services
+        nasa_status = "checking..."
+        try:
+            from nasa_integration import nasa_services
+            services_status = nasa_services.get_services_status()
+            nasa_status = "operational" if services_status["integration_available"] else "fallback_mode"
+        except:
+            nasa_status = "not_available"
+        
         return {
             "status": "healthy",
             "timestamp": datetime.utcnow().isoformat(),
-            "database": "connected"
+            "database": "connected",
+            "nasa_integration": nasa_status,
+            "version": "3.0.0 - NASA TEMPO Integration",
+            "features": ["nasa_tempo", "planetary_computer", "azure_ml", "enhanced_weather"]
         }
     except Exception as e:
         return JSONResponse(
