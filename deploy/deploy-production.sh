@@ -38,7 +38,7 @@ if [[ $EUID -eq 0 ]]; then
 fi
 
 # Navigate to project directory
-PROJECT_DIR="/home/azureuser/CleanAirSights"
+PROJECT_DIR="/opt/cleanairsights"
 if [ ! -d "$PROJECT_DIR" ]; then
     print_error "Project directory not found: $PROJECT_DIR"
     print_status "Please ensure CleanAirSights is cloned to $PROJECT_DIR"
