@@ -1,0 +1,108 @@
+version: '3.8'
+
+services:
+  # Nginx Reverse Proxy
+  nginx:
+    image: nginx:alpine
+    container_name: cleanairsight-nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf
+      - ./nginx/ssl:/etc/nginx/ssl
+      - nginx_logs:/var/log/nginx
+    depends_on:
+      - backend
+      - frontend
+    networks:
+      - cleanairsight-network
+
+  # MongoDB Database
+  mongodb:
+    image: mongo:7.0
+    container_name: cleanairsight-mongodb
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:27017:27017"  # Only bind to localhost for security
+    volumes:
+      - mongodb_data:/data/db
+      - ./mongodb/mongod.conf:/etc/mongod.conf
+    environment:
+      MONGO_INITDB_DATABASE: cleanairsight
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USERNAME}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD}
+    command: mongod --config /etc/mongod.conf
+    networks:
+      - cleanairsight-network
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: cleanairsight-redis
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:6379:6379"  # Only bind to localhost for security
+    volumes:
+      - redis_data:/data
+      - ./redis/redis.conf:/etc/redis/redis.conf
+    command: redis-server /etc/redis/redis.conf
+    networks:
+      - cleanairsight-network
+
+  # Backend API
+  backend:
+    build:
+      context: ../backend
+      dockerfile: Dockerfile.prod
+    container_name: cleanairsight-backend
+    restart: unless-stopped
+    expose:
+      - "8000"
+    volumes:
+      - ../data:/app/data
+      - ../models:/app/models
+      - backend_logs:/app/logs
+    environment:
+      - MONGODB_URI=mongodb://${MONGO_ROOT_USERNAME}:${MONGO_ROOT_PASSWORD}@mongodb:27017/cleanairsight?authSource=admin
+      - REDIS_URL=redis://redis:6379
+      - API_HOST=0.0.0.0
+      - API_PORT=8000
+      - ENVIRONMENT=production
+      - DOMAIN=${DOMAIN}
+    env_file:
+      - ../.env.prod
+    depends_on:
+      - mongodb
+      - redis
+    networks:
+      - cleanairsight-network
+    command: gunicorn main:app -w 4 -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:8000
+
+  # Frontend
+  frontend:
+    build:
+      context: ../frontend
+      dockerfile: Dockerfile.prod
+    container_name: cleanairsight-frontend
+    restart: unless-stopped
+    expose:
+      - "3000"
+    environment:
+      - NODE_ENV=production
+      - VITE_API_URL=https://${DOMAIN}
+    depends_on:
+      - backend
+    networks:
+      - cleanairsight-network
+
+volumes:
+  mongodb_data:
+  redis_data:
+  nginx_logs:
+  backend_logs:
+
+networks:
+  cleanairsight-network:
+    driver: bridge
