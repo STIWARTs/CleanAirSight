@@ -427,7 +427,156 @@ Your CleanAirSights application is now deployed with:
 
 ---
 
-## 📞 Support
+## � Advanced Troubleshooting
+
+### Common Nginx Configuration Issues
+
+#### Issue: "proxy_pass cannot have URI part" Error
+**Symptoms:**
+```
+nginx: [emerg] "proxy_pass" cannot have URI part in location given by regular expression, or inside named location, or inside "if" statement, or inside "limit_except" block
+```
+
+**Solution:**
+1. Check nginx.conf for these patterns:
+   - `proxy_pass http://frontend/;` in `@fallback` named locations
+   - `proxy_pass http://backend/;` in regex locations `~*`
+
+2. Fix by removing trailing slash:
+   ```nginx
+   # ❌ Wrong - has URI part (/)
+   location @fallback {
+       proxy_pass http://frontend/;
+   }
+   
+   # ✅ Correct - no URI part
+   location @fallback {
+       proxy_pass http://frontend;
+   }
+   ```
+
+#### Issue: Environment Variables Not Loading
+**Symptoms:**
+```
+WARN[0000] The "MONGO_ROOT_PASSWORD" variable is not set. Defaulting to a blank string.
+```
+
+**Solutions:**
+1. Verify `.env.prod` file exists and has correct format:
+   ```bash
+   cd /opt/cleanairsights/deploy
+   ls -la .env.prod
+   cat .env.prod | head -5
+   ```
+
+2. Ensure `env_file` is added to all services that need it:
+   ```yaml
+   services:
+     mongodb:
+       # ... other config
+       env_file:
+         - ../.env.prod
+   ```
+
+3. Copy environment file correctly:
+   ```bash
+   # ❌ Wrong - missing dot
+   cp ../env.prod .
+   
+   # ✅ Correct
+   cp ../.env.prod .
+   ```
+
+#### Issue: Deprecated HTTP2 Directive
+**Symptoms:**
+```
+nginx: [warn] the "listen ... http2" directive is deprecated
+```
+
+**Solution:**
+Replace in nginx.conf:
+```nginx
+# ❌ Old syntax
+listen 443 ssl http2;
+
+# ✅ New syntax
+listen 443 ssl;
+http2 on;
+```
+
+### Container Debugging Commands
+
+```bash
+# Test nginx configuration syntax
+sudo docker run --rm -v "$(pwd)/nginx/nginx.conf:/etc/nginx/nginx.conf:ro" nginx:alpine nginx -t
+
+# Check container logs
+sudo docker-compose -f docker-compose.prod.yml logs nginx
+sudo docker-compose -f docker-compose.prod.yml logs backend
+sudo docker-compose -f docker-compose.prod.yml logs frontend
+
+# Check container status
+sudo docker-compose -f docker-compose.prod.yml ps
+
+# Restart specific container
+sudo docker-compose -f docker-compose.prod.yml restart nginx
+
+# Force recreate containers
+sudo docker-compose -f docker-compose.prod.yml down
+sudo docker-compose -f docker-compose.prod.yml up -d --force-recreate
+
+# Check SSL certificate mounting
+sudo docker exec cleanairsight-nginx ls -la /etc/nginx/ssl/
+
+# Check environment variables inside container
+sudo docker exec cleanairsight-nginx env | grep DOMAIN
+```
+
+### SSL Certificate Issues
+
+```bash
+# Check SSL certificate status
+sudo certbot certificates
+
+# Renew SSL certificate manually
+sudo certbot renew --dry-run
+
+# Check certificate expiration
+openssl x509 -in /etc/letsencrypt/live/cleanairsight.earth/cert.pem -noout -dates
+
+# Test SSL configuration
+openssl s_client -connect cleanairsight.earth:443 -servername cleanairsight.earth
+```
+
+### System Nginx Alternative
+
+If Docker nginx keeps failing, use system nginx:
+
+```bash
+# Install system nginx
+sudo apt update
+sudo apt install nginx
+
+# Stop Docker nginx
+sudo docker-compose -f docker-compose.prod.yml stop nginx
+
+# Copy nginx config to system
+sudo cp nginx/nginx.conf /etc/nginx/sites-available/cleanairsight
+sudo ln -s /etc/nginx/sites-available/cleanairsight /etc/nginx/sites-enabled/
+sudo rm /etc/nginx/sites-enabled/default
+
+# Copy SSL certificates
+sudo mkdir -p /etc/nginx/ssl
+sudo cp /etc/letsencrypt/live/cleanairsight.earth/fullchain.pem /etc/nginx/ssl/
+sudo cp /etc/letsencrypt/live/cleanairsight.earth/privkey.pem /etc/nginx/ssl/
+
+# Test and start nginx
+sudo nginx -t
+sudo systemctl enable nginx
+sudo systemctl start nginx
+```
+
+## �📞 Support
 
 If you encounter any issues:
 1. Check the troubleshooting section above

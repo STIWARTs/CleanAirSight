@@ -33,6 +33,8 @@ services:
       MONGO_INITDB_DATABASE: cleanairsight
       MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USERNAME}
       MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD}
+    env_file:
+      - ../.env.prod
     command: mongod --config /etc/mongod.conf
     networks:
       - cleanairsight-network
@@ -92,6 +94,8 @@ services:
     environment:
       - NODE_ENV=production
       - VITE_API_URL=https://${DOMAIN}
+    env_file:
+      - ../.env.prod
     depends_on:
       - backend
     networks:
