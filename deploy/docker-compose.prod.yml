@@ -10,8 +10,7 @@ services:
       - "80:80"
       - "443:443"
     volumes:
-      - ./nginx/nginx.conf:/etc/nginx/nginx.conf
-      - ./nginx/ssl:/etc/nginx/ssl
+      - ./nginx/nginx-http-only.conf:/etc/nginx/nginx.conf
       - nginx_logs:/var/log/nginx
     depends_on:
       - backend
@@ -24,18 +23,17 @@ services:
     image: mongo:7.0
     container_name: cleanairsight-mongodb
     restart: unless-stopped
-    ports:
-      - "127.0.0.1:27017:27017"  # Only bind to localhost for security
+    expose:
+      - "27017"  # Only expose internally, no external port binding
     volumes:
       - mongodb_data:/data/db
-      - ./mongodb/mongod.conf:/etc/mongod.conf
     environment:
       MONGO_INITDB_DATABASE: cleanairsight
       MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USERNAME}
       MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD}
     env_file:
       - ../.env.prod
-    command: mongod --config /etc/mongod.conf
+    # Use default MongoDB configuration for now
     networks:
       - cleanairsight-network
 
@@ -44,8 +42,8 @@ services:
     image: redis:7-alpine
     container_name: cleanairsight-redis
     restart: unless-stopped
-    ports:
-      - "127.0.0.1:6379:6379"  # Only bind to localhost for security
+    expose:
+      - "6379"  # Only expose internally, no external port binding
     volumes:
       - redis_data:/data
       - ./redis/redis.conf:/etc/redis/redis.conf

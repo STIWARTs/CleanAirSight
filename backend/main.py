@@ -57,25 +57,37 @@ logger = logging.getLogger(__name__)
 async def lifespan(app: FastAPI):
     # Startup
     logger.info("Starting CleanAirSight API...")
-    await db.connect_db()
     
-    # Initialize scheduler for automated data collection
-    scheduler = DataScheduler(
-        tempo_client=TEMPOClient(
-            settings.nasa_earthdata_username,
-            settings.nasa_earthdata_password
-        ),
-        ground_client=GroundSensorClient(
-            settings.openaq_api_key,
-            settings.airnow_api_key
-        ),
-        weather_client=WeatherClient(settings.openweather_api_key),
-        db=db.get_db()
-    )
+    try:
+        await db.connect_db()
+        logger.info("Database connected successfully")
+    except Exception as e:
+        logger.error(f"Database connection failed: {e}")
+        # Continue without database for now (will use demo data)
     
-    # Start background scheduler
-    scheduler.start()
-    app.state.scheduler = scheduler
+    # Initialize scheduler for automated data collection (with error handling)
+    try:
+        scheduler = DataScheduler(
+            tempo_client=TEMPOClient(
+                settings.nasa_earthdata_username,
+                settings.nasa_earthdata_password
+            ),
+            ground_client=GroundSensorClient(
+                settings.openaq_api_key,
+                settings.airnow_api_key
+            ),
+            weather_client=WeatherClient(settings.openweather_api_key),
+            db=db.get_db()
+        )
+        
+        # Start background scheduler
+        scheduler.start()
+        app.state.scheduler = scheduler
+        logger.info("Scheduler started successfully")
+    except Exception as e:
+        logger.error(f"Scheduler initialization failed: {e}")
+        # Continue without scheduler for now
+        app.state.scheduler = None
     
     logger.info("CleanAirSight API started successfully")
     
@@ -83,8 +95,19 @@ async def lifespan(app: FastAPI):
     
     # Shutdown
     logger.info("Shutting down CleanAirSight API...")
-    scheduler.stop()
-    await db.close_db()
+    try:
+        if hasattr(app.state, 'scheduler') and app.state.scheduler:
+            app.state.scheduler.stop()
+            logger.info("Scheduler stopped")
+    except Exception as e:
+        logger.error(f"Error stopping scheduler: {e}")
+    
+    try:
+        await db.close_db()
+        logger.info("Database connection closed")
+    except Exception as e:
+        logger.error(f"Error closing database: {e}")
+    
     logger.info("CleanAirSight API shutdown complete")
 
 

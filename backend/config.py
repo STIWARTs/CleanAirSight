@@ -28,6 +28,7 @@ class Settings(BaseSettings):
     api_host: str = "0.0.0.0"
     api_port: int = 8000
     cors_origins: str = "http://localhost:3000,http://localhost:5173"
+    allowed_origins: str = "https://cleanairsight.earth,https://www.cleanairsight.earth"
     
     # Email Service Settings
     sender_email: str = "alerts@cleanairsight.com"
@@ -55,7 +56,9 @@ class Settings(BaseSettings):
     
     @property
     def cors_origins_list(self) -> List[str]:
-        return [origin.strip() for origin in self.cors_origins.split(",")]
+        # Use allowed_origins for production, cors_origins for development
+        origins = self.allowed_origins if self.environment == "production" else self.cors_origins
+        return [origin.strip() for origin in origins.split(",")]
 
 
 settings = Settings()
