@@ -90,3 +90,8 @@ coverage.xml
 
 # Production ENV
 .env.prod
+.env.production
+.env.prod.local
+.env.prod.example
+.env.example
+DEPLOYMENT.md
