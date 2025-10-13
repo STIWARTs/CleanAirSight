@@ -8,9 +8,20 @@
 
 A cutting-edge web application that combines NASA's TEMPO satellite data with ground sensors and machine learning to provide comprehensive air quality monitoring and forecasting across North America.
 
-🔗 **Live Demo**: http://localhost:3000 (after setup)
-📖 **Quick Setup Guide**: See `SETUP_FOR_OTHERS.md`
+**Deployed Site**: https://www.cleanairsight.earth
+**Live Demo**: https://youtu.be/Jr91ayrpamA
+**SAC Project Page Link**: https://www.spaceappschallenge.org/2025/find-a-team/omega7/?tab=project
 
+CleanAirSight is an innovative air quality monitoring platform that leverages NASA’s TEMPO satellite data and AI-powered forecasting to provide real-time, location-specific air quality information. By integrating NASA’s satellite measurements with Microsoft’s environmental intelligence and Azure Machine Learning, it offers comprehensive assessments of air quality, including AQI readings, pollutant concentrations (NO2, O3, HCHO, PM2.5, PM10), health impacts, and personalized recommendations. The platform empowers individuals, communities, and organizations to make informed decisions about outdoor activities and health precautions, offering 24-48 hour forecasts and environmental context. It’s especially crucial for vulnerable populations, urban planners, and researchers needing accurate data to protect public health and guide policy in an increasingly polluted world.
+
+**Team OMEGA** is back again this year to the NASA SAC 2025 after qualifying for National Round once already in 2024. 
+### Team Members:  
+- **Stiwart Stance Saxena** [[GitHub](https://github.com/STIWARTs)] [[LinkedIn](https://linkedin.com/in/stiwartsaxena)] 
+- **Piyush Verma** [[GitHub](https://github.com/piyerx)] [[LinkedIn](https://linkedin.com/in/piyerx)]
+- **Priyanshu Agrawal** [[GitHub](https://github.com/Priyanshugrawal)] [[LinkedIn](https://www.linkedin.com/in/priyanshu-agrawal-83b268291)]
+- **Bandana Das** [[GitHub](https://github.com/bandana-web)] [[LinkedIn](https://www.linkedin.com/in/bandana-das-64b232291)]
+- **Neha Soni** [[GitHub](https://github.com/NehaSoni25)] [[LinkedIn](https://www.linkedin.com/in/neha-soni-b47115290)]
+- **Yash Singh** [[GitHub](https://github.com/yash-singh12)] [[LinkedIn](https://www.linkedin.com/in/yash-singh-8b079b2b3)]
 ---
 
 ## ✨ Features
@@ -35,56 +46,12 @@ A cutting-edge web application that combines NASA's TEMPO satellite data with gr
 
 ---
 
-## 🚀 Quick Start (3 Steps)
+## 🔑 API Keys Used
 
-### Prerequisites
-- **Docker Desktop** - [Download](https://www.docker.com/products/docker-desktop/)
-- **Git** - [Download](https://git-scm.com/downloads)
-- **API Keys** (free) - Instructions below
-
-### Setup
-
-```bash
-# 1. Clone the repository
-git clone https://github.com/STIWARTs/CleanAirSight.git
-cd CleanAirSight
-
-# 2. Configure API keys
-cp .env.example .env
-# Edit .env and add your API keys
-
-# 3. Start the application
-docker-compose up -d
-```
-
-### Access
-- **Frontend**: http://localhost:3000 ⭐
-- **API Docs**: http://localhost:8000/docs
-- **Health Check**: http://localhost:8000/health
-
-📚 **Detailed Instructions**: See `SETUP_FOR_OTHERS.md`
-
----
-
-## 🔑 Getting API Keys
-
-### NASA Earthdata (Required - Free)
-1. Visit: https://urs.earthdata.nasa.gov/
-2. Click "Register"
-3. Fill out form and verify email
-4. Add username & password to `.env`
-
-### OpenWeatherMap (Required - Free)
-1. Visit: https://openweathermap.org/api
-2. Sign up for free account
-3. Get API key from dashboard
-4. Add to `.env`
-
-### EPA AirNow (Optional)
-1. Visit: https://docs.airnowapi.org/
-2. Request API key (takes 1-2 days)
-3. Add to `.env` when received
-
+- NASA Earthdata (https://urs.earthdata.nasa.gov/
+- OpenWeatherMap (https://openweathermap.org/api)
+- EPA AirNow (https://docs.airnowapi.org/)
+- NASA TEMPO (https://www-air.larc.nasa.gov/missions/tempo/index.html)
 ---
 
 ## 📊 What You'll See
@@ -111,26 +78,43 @@ docker-compose up -d
 
 ## 🏗️ Tech Stack
 
-### Backend
-- **FastAPI** - Modern Python web framework
-- **MongoDB** - NoSQL database with spatial indexing
-- **Redis** - Caching layer
-- **XGBoost** - Machine learning models
-- **APScheduler** - Automated data collection
+**Programming Languages**
+* Python 3.11Backend API development, NASA data integration, machine learning.
+* JavaScript (Node.js 18+): NASA service integrations, real-time data processing.
+* JavaScript (React): Frontend user interface, interactive visualizations.
+* SQL: Database queries and data management.
 
-### Frontend
-- **React** - UI library
-- **Vite** - Build tool
-- **Tailwind CSS** - Styling
-- **Leaflet.js** - Interactive maps
-- **Recharts** - Data visualization
-- **Lucide React** - Icons
+**Frameworks and Libraries**
+* FastAPI: High-performance Python web framework for REST API
+* React 18: Modern frontend framework with hooks and context
+* Tailwind CSS: Utility-first CSS framework for responsive design
+* Axios: HTTP client for API communications
+* Pandas/NumPy: Data analysis and scientific computing
+* Scikit-learn: Machine learning algorithms and model training
 
-### DevOps
-- **Docker** - Containerization
-- **Docker Compose** - Multi-container orchestration
-- **GitHub Actions** - CI/CD (optional)
+**Databases and Storage**
+* MongoDB: Primary database for air quality data and user preferences
+* Redis: High-performance caching for real-time data access
+* Azure Storage: Satellite imagery and historical data archival
 
+**Cloud and Infrastructure**
+* Docker: Containerization for consistent deployment
+* Azure Container Instances: Scalable cloud hosting
+* Azure Machine Learning: AI model training and deployment
+* GitHub Actions: CI/CD pipeline for automated testing and deployment
+
+**APIs and Services**
+* NASA TEMPO API: Real-time satellite air quality measurements
+* Microsoft Planetary Computer: Environmental and satellite imagery data
+* Azure Cognitive Services: Advanced AI capabilities
+* Meteomatics Weather API: Professional meteorological data
+
+**Development Tools**
+* Git/GitHub: Version control and collaboration
+* VS Code: Integrated development environment
+* Postman: API testing and documentation
+* Jest: JavaScript testing framework
+* Pytest: Python testing framework
 ---
 
 ## 📁 Project Structure
@@ -154,127 +138,6 @@ CleanAirSight/
 ├── .env.example          # Environment variables template
 └── README.md             # This file
 ```
-
----
-
-## 🔌 API Endpoints
-
-### Current Air Quality
-```bash
-GET /api/current?city=Los Angeles
-GET /api/current?lat=34.05&lon=-118.25
-```
-
-### Forecasts
-```bash
-GET /api/forecast?city=Chicago&hours=24
-GET /api/forecast?lat=41.88&lon=-87.63&hours=48
-```
-
-### Map Data (GeoJSON)
-```bash
-GET /api/map?bbox=-125,25,-65,50
-GET /api/map?pollutant=O3
-```
-
-### Historical Data
-```bash
-GET /api/historical?city=Houston&limit=1000
-GET /api/historical?start_date=2024-01-01
-```
-
-**Full API Documentation**: http://localhost:8000/docs (when running)
-
----
-
-## 🐳 Docker Commands
-
-```bash
-# Start all services
-docker-compose up -d
-
-# Stop all services
-docker-compose down
-
-# View logs
-docker-compose logs -f backend
-docker-compose logs -f frontend
-
-# Restart a service
-docker-compose restart backend
-
-# Rebuild after code changes
-docker-compose up --build -d
-
-# Fresh start (removes all data)
-docker-compose down -v
-docker-compose up --build -d
-```
-
----
-
-## 🧪 Testing
-
-### Quick Health Check
-```bash
-# Backend
-curl http://localhost:8000/health
-
-# API endpoint
-curl "http://localhost:8000/api/current?city=Los Angeles"
-
-# Frontend
-open http://localhost:3000  # Mac
-start http://localhost:3000  # Windows
-```
-
-### Load Sample Data
-```bash
-mongoimport --db cleanairsight \
-  --collection harmonized_data \
-  --type csv \
-  --headerline \
-  --file examples/harmonized_sample.csv
-```
-
----
-
-## 🐛 Troubleshooting
-
-### Docker not starting
-**Solution**: Make sure Docker Desktop is running
-
-### Port already in use
-```bash
-# Windows
-netstat -ano | findstr :3000
-taskkill /PID <PID> /F
-
-# Mac/Linux
-lsof -i :3000
-kill -9 <PID>
-```
-
-### Frontend shows "Data Collection in Progress"
-**Solution**: Normal! Wait 2-3 minutes for initial data collection
-
-### Map/Forecast pages not loading
-```bash
-docker-compose down
-docker-compose up --build -d
-```
-
-**More help**: See `SETUP_FOR_OTHERS.md` or open an issue
-
----
-
-## 📚 Documentation
-
-- **`SETUP_FOR_OTHERS.md`** - Detailed setup guide for new users
-- **`QUICKSTART.md`** - 10-minute quick start
-- **`DEPLOYMENT.md`** - Cloud deployment guide (GCP, Azure, AWS)
-- **`PROJECT_SUMMARY.md`** - Hackathon presentation summary
-- **`FINAL_STATUS.md`** - Current project status
 
 ---
 
@@ -302,18 +165,6 @@ docker-compose up --build -d
 
 ---
 
-## 🤝 Contributing
-
-Contributions are welcome! Please:
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
-
----
-
 ## 📜 License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
@@ -333,8 +184,6 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## 📧 Contact
 
 **GitHub**: [STIWARTs/CleanAirSight](https://github.com/STIWARTs/CleanAirSight)
-
-For questions or support, please open an issue on GitHub.
 
 ---
 
